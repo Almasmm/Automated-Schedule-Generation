@@ -1,0 +1,12 @@
+{
+  "HARD": {
+    "CLASH": 1000,
+    "CAPACITY": 800,
+    "PRECEDENCE": 600
+  },
+  "SOFT": {
+    "GAP": 10,
+    "EARLY_LATE": 5,
+    "UNUSED_ROOM": 1
+  }
+}
