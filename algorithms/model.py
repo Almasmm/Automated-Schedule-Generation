@@ -1,13 +1,6 @@
-# model.py ------------------------------------------------------------
+"""Простейшие структуры данных для GA."""
+from deap import base, creator
 
-from dataclasses import dataclass, field
-from typing import List
-
-@dataclass
-class Gene:
-    group_codes: List[str]
-    course_code: str
-    course_name: str
-    session_type: str  # lecture / practice / lab
-    size: int          # total students in session
-    slots_needed: int  # number of 50‑min blocks
+# один агрегированный fitness (меньше = лучше, потому что отрицательные штрафы)
+creator.create("Fitness", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.Fitness)
