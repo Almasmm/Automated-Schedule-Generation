@@ -10,16 +10,15 @@ from deap import base, tools, algorithms
 from model import creator
 import config as cfg
 
-# ------------------------------------------------------------------
 def build_genes(data, acad_tri: int) -> Tuple[List[Dict[str, Any]], List[str]]:
-    """Из curriculum + groups формируем список 'генов' (занятий)."""
+    """From curriculum + groups we generate a list of 'genes' (classes)"""
     cur = data.curriculum_for_acad_tri(acad_tri)
     genes = []
 
-    # общий словарь size группы
+    # common vocabulary
     size_map = data.groups.set_index("group_code")["headcount"].to_dict()
 
-    # ---------- ЛЕКЦИИ: объединяем группы одного курса+года ----------
+    # LECTURES: bringing together groups of the same course+year 
     key_cols = ["programme_code", "year", "course_code"]
     for _, block in cur[cur.lecture_slots > 0].groupby(key_cols):
         groups = data.groups[
@@ -35,7 +34,7 @@ def build_genes(data, acad_tri: int) -> Tuple[List[Dict[str, Any]], List[str]]:
                  slots=int(block.lecture_slots.iloc[0]))
         )
 
-    # ---------- Практики и лаборатории -------------------------------
+    # Practices and laboratories
     def per_group(col, kind):
         sub = cur[cur[col] > 0]
         for _, row in sub.iterrows():
@@ -55,7 +54,7 @@ def build_genes(data, acad_tri: int) -> Tuple[List[Dict[str, Any]], List[str]]:
     per_group("practice_slots", "practice")
     per_group("lab_slots", "lab")
 
-    # пул всех slot_id (без Чт для 3-го курса, без Сб для 2-го)
+    # pool of all slot_id (without Cht for 3rd year, without Sat for 2nd year)
     slot_pool = []
     for yr in (1, 2, 3):
         disallowed = {"Thu"} if yr == 3 else {"Sat"} if yr == 2 else set()
@@ -63,9 +62,8 @@ def build_genes(data, acad_tri: int) -> Tuple[List[Dict[str, Any]], List[str]]:
         slot_pool.extend(slots)
     return genes, slot_pool
 
-# ------------------------------------------------------------------
 def run_ga(data, acad_tri: int, pop: int, gen: int, seed: int):
-    """Запуск GA и возврат DataFrame расписания."""
+    """Start GA and return DataFrame schedules"""
     random.seed(seed)
     np.random.seed(seed)
 
@@ -74,7 +72,7 @@ def run_ga(data, acad_tri: int, pop: int, gen: int, seed: int):
 
     print(f"Genes to schedule: {len(genes)}")
 
-    # ---------- кодируем индивидуум ----------------------------------
+    # encode the individual as a list (room, slot) (room - index in rooms, slot - index in slot_pool)*
     ROOM_IDX = list(range(len(rooms)))
     SLOT_IDX = list(range(len(slot_pool)))
 
