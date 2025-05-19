@@ -21,21 +21,63 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <title>Комбинированная проверка расписания</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 40px;}
-        h1 { color: #d7263d;}
+        body {
+            font-family: Arial, sans-serif;
+            background: #181818;
+            margin: 40px;
+            color: #fff;
+        }
+        h1, h2 {
+            color: #ff9800;
+        }
         .upload-form {margin-bottom: 30px;}
-        table { border-collapse: collapse; width: 100%; margin-top: 30px;}
-        th, td { padding: 8px 14px; border: 1px solid #ddd; }
-        th { background: #fa8b8b; }
-        tr.error-row { background: #ffe5e5; }
-        .btn { padding: 10px 25px; border: none; background: #d7263d; color: #fff; font-weight: bold; border-radius: 8px; cursor: pointer;}
-        .btn:hover { background: #bc2335; }
+        input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 30px;
+            background: #232323;
+            color: #fff;
+        }
+        th, td {
+            padding: 8px 14px;
+            border: 1px solid #444;
+        }
+        th {
+            background: #ff9800;
+            color: #181818;
+        }
+        tr.error-row {
+            background: #2d1b09;
+        }
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            background: #ff9800;
+            color: #181818;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #ffa733;
+        }
     </style>
 </head>
 <body>
     <h1>Проверка расписания на конфликты и GA_Input</h1>
     <form class="upload-form" method="post" enctype="multipart/form-data">
+        <label for="timetable">Выберите файл расписания (JSON):</label>
         <input type="file" name="timetable" accept=".json" required>
+        <label for="ga_input">Выберите файл GA_Input (XLSX):</label>
         <input type="file" name="ga_input" accept=".xlsx">
         <button class="btn" type="submit">Проверить</button>
     </form>
@@ -45,7 +87,6 @@ HTML_TEMPLATE = """
     {% endif %}
     {% if violation_table %}
         <h2>Нарушения по GA_Input</h2>
-        
         {{ violation_table | safe }}
     {% endif %}
 </body>
