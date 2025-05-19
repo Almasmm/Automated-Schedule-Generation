@@ -1,7 +1,9 @@
+
 import os
+import re
+import json
 from flask import Flask, render_template_string, request, send_file
 import pandas as pd
-import json
 from collections import defaultdict
 from io import BytesIO
 
@@ -12,7 +14,7 @@ HTML_TEMPLATE = """
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Проверка расписания</title>
+    <title>Комбинированная проверка расписания</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 40px;}
         h1 { color: #d7263d;}
@@ -26,98 +28,120 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>Проверка конфликтов в расписании</h1>
+    <h1>Проверка расписания на конфликты и GA_Input</h1>
     <form class="upload-form" method="post" enctype="multipart/form-data">
         <input type="file" name="timetable" accept=".json" required>
-        <button class="btn" type="submit">Проверить расписание</button>
+        <input type="file" name="ga_input" accept=".xlsx">
+        <button class="btn" type="submit">Проверить</button>
     </form>
-    {% if table %}
-        <a href="/download" class="btn">Скачать ошибки (Excel)</a>
-        {{ table | safe }}
+    {% if conflict_table %}
+        <h2>Конфликты</h2>
+        {{ conflict_table | safe }}
+    {% endif %}
+    {% if violation_table %}
+        <h2>Нарушения по GA_Input</h2>
+        
+        {{ violation_table | safe }}
     {% endif %}
 </body>
 </html>
 """
 
-def analyze_conflicts(timetable):
-    conflicts = defaultdict(list)
-    room_usage = defaultdict(lambda: defaultdict(list))
-    group_usage = defaultdict(lambda: defaultdict(list))
+last_conflict_df = None
+last_violation_df = None
 
-    for group, sessions in timetable.items():
-        for session in sessions:
-            key = (session["day"], session["time"])
-            room = session["room"]
-            group_id = session["group"]
-            # Room conflict (без Gym)
-            room_usage[key][room].append((group_id, session["course"]))
-            # Group conflict
-            group_usage[key][group_id].append(session["course"])
-
-    for key, rooms in room_usage.items():
-        for room, usage in rooms.items():
-            if room.strip().lower() == "gym":  # Игнорируем Gym
-                continue
-            if len(usage) > 1:
-                conflicts["Room conflict"].append((key, room, usage))
-    for key, groups in group_usage.items():
-        for group_id, usage in groups.items():
-            if len(usage) > 1:
-                # usage — это список курсов
-                course_pairs = [(group_id, course) for course in usage]
-                conflicts["Group conflict"].append((key, group_id, course_pairs))
-
-    conflict_list = []
-    for conflict_type, entries in conflicts.items():
-        for entry in entries:
-            details_str = []
-            for detail in entry[2]:
-                if isinstance(detail, (list, tuple)) and len(detail) == 2:
-                    details_str.append(f"{detail[0]}: {detail[1]}")
-                else:
-                    details_str.append(str(detail))
-            conflict_list.append((
-                conflict_type, 
-                entry[0][0],  # day
-                entry[0][1],  # time
-                entry[1],     # entity
-                "; ".join(details_str)
-            ))
-    df_conflicts = pd.DataFrame(conflict_list, columns=["Тип конфликта", "День", "Время", "Сущность", "Детали"])
-    df_conflicts.index = df_conflicts.index + 1  # Для нумерации строк с 1
-    df_conflicts.reset_index(inplace=True)
-    df_conflicts.rename(columns={'index': '№'}, inplace=True)
-    return df_conflicts
-
-# Сохраняем последний DataFrame для скачивания
-last_conflicts_df = None
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
-    global last_conflicts_df
-    table_html = None
-    if request.method == 'POST':
-        file = request.files['timetable']
-        if file and file.filename.endswith('.json'):
-            timetable = json.load(file)
-            df_conflicts = analyze_conflicts(timetable)
-            last_conflicts_df = df_conflicts  # Сохраним для скачивания
-            if not df_conflicts.empty:
-                table_html = df_conflicts.to_html(classes='error-table', index=False, border=0, escape=False)
-            else:
-                table_html = "<p style='color:green;font-weight:bold;'>Конфликтов не найдено! 🎉</p>"
-    return render_template_string(HTML_TEMPLATE, table=table_html)
+    global last_conflict_df, last_violation_df
+    conflict_table = None
+    violation_table = None
+    if request.method == "POST":
+        tf = request.files["timetable"]
+        gf = request.files.get("ga_input")
+        timetable_name = tf.filename
+        timetable = json.load(tf)
 
-@app.route('/download')
-def download():
-    global last_conflicts_df
-    if last_conflicts_df is None or last_conflicts_df.empty:
-        return "Нет данных для скачивания", 400
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        last_conflicts_df.to_excel(writer, index=False)
-    output.seek(0)
-    return send_file(output, as_attachment=True, download_name="conflicts.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # ---------- Конфликт-анализ ----------
+        conflicts = defaultdict(list)
+        room_usage = defaultdict(lambda: defaultdict(list))
+        group_usage = defaultdict(lambda: defaultdict(list))
+        for group, sessions in timetable.items():
+            for s in sessions:
+                key = (s["day"], s["time"])
+                room = s["room"]
+                group_id = s["group"]
+                room_usage[key][room].append((group_id, s["course"]))
+                group_usage[key][group_id].append(s["course"])
+        for key, rooms in room_usage.items():
+            for room, usage in rooms.items():
+                if room.strip().lower() == "gym":
+                    continue
+                if len(usage) > 1:
+                    conflicts["Room conflict"].append((key, room, usage))
+        for key, groups in group_usage.items():
+            for group_id, usage in groups.items():
+                if len(usage) > 1:
+                    conflicts["Group conflict"].append((key, group_id, [(group_id, c) for c in usage]))
+        rows = []
+        for ctype, items in conflicts.items():
+            for item in items:
+                details = "; ".join(f"{a}: {b}" for a, b in item[2])
+                rows.append((ctype, item[0][0], item[0][1], item[1], details))
+        last_conflict_df = pd.DataFrame(rows, columns=["Тип конфликта", "День", "Время", "Сущность", "Детали"])
+        last_conflict_df.index += 1
+        last_conflict_df.reset_index(inplace=True)
+        last_conflict_df.rename(columns={"index": "№"}, inplace=True)
+        if not last_conflict_df.empty:
+            conflict_table = last_conflict_df.to_html(index=False)
+
+        # ---------- GA_Input-анализ ----------
+        if gf:
+            trimester_match = re.search(r'T(\d+)', timetable_name)
+            if trimester_match:
+                trimester_base = int(trimester_match.group(1))
+                xls = pd.ExcelFile(gf)
+                all_sheets = xls.sheet_names
+
+                def get_ep(g): return g.split("-")[0].upper()
+                def map_trimester(base, year):
+                    m = {1: {1:1, 2:2, 3:3}, 2: {1:4,2:5,3:6}, 3:{1:7,2:8}}
+                    return m.get(year, {}).get(base)
+                group_course_type_count = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+                for group, sessions in timetable.items():
+                    for s in sessions:
+                        group_course_type_count[group][s["course"].strip().lower()][s["type"].strip().lower()] += 10
+                violations = []
+                for group in timetable:
+                    ep = get_ep(group)
+                    year_code = int(group.split("-")[1][:2])
+                    year = 1 if year_code == 23 else 2 if year_code == 22 else 3
+                    actual_trim = map_trimester(trimester_base, year)
+                    if not actual_trim or actual_trim == 9 or ep not in all_sheets:
+                        continue
+                    df = xls.parse(ep)
+                    df.columns = [c.lower().strip() for c in df.columns]
+                    if 'trimester' not in df.columns: continue
+                    df = df[df['trimester'] == actual_trim]
+                    df['course_name'] = df['course_name'].astype(str).str.strip().str.lower()
+                    for _, row in df.iterrows():
+                        cname = row['course_name']
+                        if not cname or cname == 'nan': continue
+                        for typ in ['lecture', 'practice', 'lab']:
+                            sc = f"{typ}_slots"
+                            if not pd.isna(row.get(sc)) and int(row[sc]) > 0:
+                                req = int(row[sc])
+                                act = group_course_type_count[group][cname][typ]
+                                if act < req:
+                                    violations.append({
+                                        "group": group, "ep": ep, "trimester": actual_trim,
+                                        "course": cname, "type": typ,
+                                        "required": req, "actual": act, "missing": req - act
+                                    })
+                last_violation_df = pd.DataFrame(violations)
+                if not last_violation_df.empty:
+                    violation_table = last_violation_df.to_html(index=False)
+    return render_template_string(HTML_TEMPLATE, conflict_table=conflict_table, violation_table=violation_table)
+
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
