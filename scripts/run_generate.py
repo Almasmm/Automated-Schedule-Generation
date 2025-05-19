@@ -3,39 +3,45 @@ import pandas as pd
 from scripts.data_loader import preprocess_data
 from scripts.scheduler import run_scheduler
 from scripts.exporter import export_schedule
-
 def extract_raw_genes(groups_df, courses_df, trimester):
     raw_genes = []
 
-    # Identify columns
     group_name_col = [c for c in groups_df.columns if "group" in c.lower()][0]
     course_name_col = "course_name"
     trimester_col = [c for c in courses_df.columns if "trimester" in c.lower()][0]
 
-    # Extract EP from group name (before dash)
     def get_ep_from_group(group_name):
         return str(group_name).split('-')[0]
 
-    # For every group, only get courses for their EP and requested trimester
+    def get_admission_year(group_name):
+        return int(group_name.split("-")[1][:2]) + 2000
+
+    from scripts.config import CURRENT_YEAR
+
     for _, group_row in groups_df.iterrows():
         group_name = group_row[group_name_col]
         ep = get_ep_from_group(group_name).upper().strip()
+        admission_year = get_admission_year(group_name)
+        study_year = CURRENT_YEAR - admission_year  # <-- THIS LINE FIXED
 
-        # Only use courses for this EP and trimester (no year filter)
+        curriculum_trimester = (study_year) * 3 + trimester - 3
+        # (study_year = 0) => 1st year: trimester 1,2,3
+        # (study_year = 1) => 2nd year: trimester 4,5,6
+        # (study_year = 2) => 3rd year: trimester 7,8,9
+
         ep_courses = courses_df[
-            (courses_df["EP"] == ep) & 
-            (courses_df[trimester_col] == trimester)
+            (courses_df["EP"] == ep) &
+            (courses_df[trimester_col] == curriculum_trimester)
         ]
 
-        # Debug: print matched courses count
-        print(f"Group: {group_name} | EP: {ep} | Courses for trimester {trimester}: {len(ep_courses)}")
+        print(f"Group: {group_name} | EP: {ep} | Study year: {study_year+1} | Curriculum trimester: {curriculum_trimester} | Courses: {len(ep_courses)}")
 
         type_to_column = {
             "Lecture": "lecture_slots",
             "Practice": "practice_slots",
             "Lab": "lab_slots"
         }
-        weeks_per_trimester = 10  # or change as needed
+        weeks_per_trimester = 10
 
         for _, course_row in ep_courses.iterrows():
             course = course_row[course_name_col]
@@ -53,6 +59,7 @@ def extract_raw_genes(groups_df, courses_df, trimester):
                     })
 
     return raw_genes
+
 
 def main(trimester):
     print(f"Generating schedule for trimester {trimester}...")

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>University Schedule Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" type="image/svg+xml" href="/static/photos/aitu-logo_.png">
+
+  <style>
+    body {
+    
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .overlay {
+      background: rgba(0, 0, 0, 0.7);
+      flex: 1;
+    }
+
+    .navbar {
+      background-color: rgba(0, 0, 0, 0.85);
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .carousel-container {
+      max-width: 12000px;
+      
+      margin: 0 auto 40px;
+      
+      overflow: hidden;
+    }
+
+    .carousel-item img {
+      height: 550px;
+      object-fit: cover;
+    }
+
+    .carousel-caption {
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 1rem;
+      
+    }
+
+    .info-section {
+      padding: 20px 15px 10px;
+      text-align: center;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .info-section h1 {
+      font-size: 2rem;
+      color: #ffc107;
+      margin-bottom: 15px;
+    }
+
+    .info-section p {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #f0f0f0;
+    }
+
+    .main-content {
+      padding-top: 50px;
+    }
+
+    .graph-container canvas {
+      margin-bottom: 15px;
+      max-height: 150px;
+    }
+
+    .info-box {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+    }
+
+    .info-box h2 {
+      color: #ffc107;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.85);
+      color: #eee;
+      padding: 15px 20px;
+      text-align: center;
+      border-radius: 40px 40px 0 0;
+      font-family: 'Segoe UI', sans-serif;
+      margin-top: auto;
+    }
+
+    footer img {
+      height: 30px;
+      margin-bottom: 10px;
+    }
+
+    .contact-info {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .contact-info span {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .contact-info strong {
+      color: #ffc107;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="overlay">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+          <img src="static\photos\aitu-logo_.png" alt="AITU Logo" height="40" class="me-2" />
+          <span>Astana IT University</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="info-section">
+      <h1>Smarter Scheduling Starts Here</h1>
+      <p>
+        A modern tool for creating effective university timetables. Fast, adaptive, and easy to use.
+      </p>
+    </div>
+
+    <div class="carousel-container">
+      <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="static\photos\1.jpg" class="d-block w-100" alt="Slide 1" />
+            
+          </div>
+          <div class="carousel-item">
+            <img src="static\photos\2.jpg" class="d-block w-100" alt="Slide 2" />
+            
+          </div>
+          <div class="carousel-item">
+            <img src="static\photos\3.jpg" class="d-block w-100" alt="Slide 3" />
+            
+          </div>
+          
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+
+ 
+
+
+    <div class="overlay">
+        
+
+        <div class="container main-content">
+            <div class="row">
+                <div class="col-md-4 graph-container">
+                    <canvas id="cpuChart"></canvas>
+                    <canvas id="ramChart"></canvas>
+                    <canvas id="memoryChart"></canvas>
+                </div>
+                <div class="col-md-8">
+                    <div class="info-box">
+                        <h2>Automated Schedule Generation Platform</h2>
+                        <p>
+                            Our platform uses a Genetic Algorithm to generate university timetables based on faculty, student groups, rooms,
+                            and availability. It optimizes constraints and outputs a ready-to-use Excel file.
+                            <br><br>
+                            Below are real-time metrics showing the algorithm's performance, such as generation accuracy, conflict rate,
+                            constraint satisfaction, and fitness score.
+                        </p>
+                        <div class="mb-3">
+                            <label for="trimester" class="form-label">Select Trimester</label>
+                            <select class="form-select" id="trimester">
+                                <option value="1">Trimester 1</option>
+                                <option value="2">Trimester 2</option>
+                                <option value="3">Trimester 3</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="datasetUpload" class="form-label">Upload Dataset</label>
+                            <input class="form-control" type="file" id="datasetUpload">
+                        </div>
+                        <button class="btn btn-warning w-100">Generate Schedule</button>
+                        <p class="mt-3">After processing, an Excel file with the schedule will be available for download.</p>
+                        <div id="afterGenButtons" style="display: none;">
+                          <a href="http://127.0.0.1:5000/" class="btn btn-danger w-100 my-2" id="validateBtn" target="_blank">Test for Errors</a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <canvas id="internetChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <footer>
+        <img src="https://static.tildacdn.pro/tild3632-6531-4436-a133-333134313137/aitu-logo_.png" alt="AITU Logo">
+        <div class="contact-info">
+            <span><strong>Rakhim Azimzhanov</strong> — <a href="mailto:221015@astanait.edu.kz" style="color: #eee; text-decoration: none;">221015@astanait.edu.kz</a></span>
+            <span><strong>Aniyar Baibossyn</strong> — <a href="mailto:221559@astanait.edu.kz" style="color: #eee; text-decoration: none;">221559@astanait.edu.kz</a></span>
+            <span><strong>Almas Murat</strong> — <a href="mailto:221309@astanait.edu.kz" style="color: #eee; text-decoration: none;">221309@astanait.edu.kz</a></span>
+        </div>
+    </footer>
+    </div>
+
+    
+
+    <script>
+        const createChart = (id, label, color) => {
+            return new Chart(document.getElementById(id).getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: label,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: 'transparent',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: 'white' } },
+                        y: { ticks: { color: 'white' }, beginAtZero: true }
+                    }
+                }
+            });
+        };
+
+        const cpuChart = createChart('cpuChart', 'CPU Load', 'orange');
+        const ramChart = createChart('ramChart', 'RAM Load', 'lightgreen');
+        const memoryChart = createChart('memoryChart', 'Memory Load', 'skyblue');
+        const internetChart = createChart('internetChart', 'Internet Load', 'red');
+
+        const updateCharts = () => {
+            const time = new Date().toLocaleTimeString();
+            const pushData = (chart, value) => {
+                if (chart.data.labels.length > 10) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                chart.data.labels.push(time);
+                chart.data.datasets[0].data.push(value);
+                chart.update();
+            };
+
+            pushData(cpuChart, Math.random() * 100);
+            pushData(ramChart, Math.random() * 50);
+            pushData(memoryChart, 80 + Math.random() * 20);
+            pushData(internetChart, Math.random() * 100);
+        };
+
+        setInterval(updateCharts, 2000);
+        
+    </script>
+    <script>
+document.querySelector(".btn.btn-warning.w-100").addEventListener("click", async function() {
+    const trimester = document.getElementById("trimester").value;
+    const fileInput = document.getElementById("datasetUpload");
+    if (!fileInput.files.length) {
+        alert("Please upload your GA Input Excel file first!");
+        return;
+    }
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('trimester', trimester);
+
+    // UI: Disable button, show spinner
+    this.disabled = true;
+    this.innerHTML = 'Processing... <span class="spinner-border spinner-border-sm"></span>';
+
+    try {
+        // 1. Generate schedule and download Excel
+        const response = await fetch('/generate_schedule', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Failed to generate schedule!");
+
+        // Download the Excel file
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = `Schedule_Trimester_${trimester}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(downloadUrl);
+
+        // 2. Automatically download the JSON file right after
+        const jsonResponse = await fetch(`/download_json?trimester=${trimester}`);
+        if (jsonResponse.ok) {
+            const jsonBlob = await jsonResponse.blob();
+            const jsonUrl = URL.createObjectURL(jsonBlob);
+            const a2 = document.createElement("a");
+            a2.href = jsonUrl;
+            a2.download = `Schedule_Trimester_${trimester}.json`;
+            document.body.appendChild(a2);
+            a2.click();
+            a2.remove();
+            URL.revokeObjectURL(jsonUrl);
+        } else {
+            alert("Schedule generated, but JSON file not found!");
+        }
+
+        this.innerHTML = "Generate Schedule";
+    } catch (e) {
+        alert("Error: " + e.message);
+        this.innerHTML = "Generate Schedule";
+    }
+    this.disabled = false;
+});
+</script>
+
+<script>
+  document.getElementById("afterGenButtons").style.display = "";
+  window.currentTrimester = trimester; // Remember which trimester was generated
+  // Download Excel
+document.getElementById("downloadExcel").addEventListener("click", function() {
+    const t = window.currentTrimester || document.getElementById("trimester").value;
+    window.open(`/download_excel?trimester=${t}`, "_blank");
+});
+// Download JSON
+document.getElementById("downloadJson").addEventListener("click", function() {
+    const t = window.currentTrimester || document.getElementById("trimester").value;
+    window.open(`/download_json?trimester=${t}`, "_blank");
+});
+
+</script>
+</body>
+
+</html>

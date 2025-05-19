@@ -11,10 +11,12 @@ def evaluate_fitness(genes):
     room_schedule = defaultdict(list)
     group_day_slots = defaultdict(lambda: defaultdict(list))
 
+
+    
+
+
     for g in genes:
-        if ("Physical Education" in g.course or "PE" in g.course) and g.room.strip().lower() != "gym":
-            hard_penalty += 1000  # Must be in Gym
-        
+     
         key_time = (g.day, g.time)
         key_room = (g.room, g.day, g.time)
         key_group = (g.group, g.day, g.time)
@@ -38,6 +40,8 @@ def evaluate_fitness(genes):
 
     # HARD CONSTRAINTS
     for val in room_schedule.values():
+        if all(("physical education" in g.course.lower() or g.course.strip().upper() == "PE") and g.room.strip().lower() == "gym" for g in val):
+            continue  # Skip conflict checking for Gym PE sessions
         if len(val) > 1:
             hard_penalty += 1000 * (len(val) - 1)  # Room conflict
 
