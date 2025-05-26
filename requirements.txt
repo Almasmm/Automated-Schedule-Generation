@@ -1,5 +1,9 @@
-pandas
-openpyxl
-numpy
-deap
-tqdm
+# Web layer
+Flask==3.0.3          # web server & routing
+
+# Data handling
+pandas==2.2.3         # dataframe ops + Excel I/O
+numpy==2.2.6          # math backbone for pandas
+openpyxl==3.1.2       # write/read .xlsx files for pandas
+
+#  imports—json, argparse, shutil, etc.—is in the Python standard-library
