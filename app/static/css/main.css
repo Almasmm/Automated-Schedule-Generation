@@ -1,0 +1,213 @@
+body {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: white;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+.overlay {
+    background: rgba(0, 0, 0, 0.7);
+    min-height: 100vh;
+}
+
+.navbar {
+    background-color: rgba(0, 0, 0, 0.85);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.navbar .navbar-brand {
+    display: flex;
+    align-items: center;
+}
+
+.aitu-logo {
+    height: 60px;
+    max-height: 80px;
+    transition: height 0.15s;
+}
+
+.navbar .navbar-brand span {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.navbar .navbar-nav .nav-link {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.navbar .navbar-nav .nav-link:hover {
+    color: #ffc107;
+}
+
+.carousel-container {
+    position: relative;
+    max-width: 12000px;
+    margin: 0 auto 40px;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.carousel-item img {
+    height: 643px;
+    object-fit: cover;
+}
+
+.carousel-fixed-caption {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    text-align: center;
+    background: rgba(34, 34, 34, 0);
+    padding: 22px 24px 20px 24px;
+    color: #ffc107;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0);
+    border-color: none;
+    pointer-events: none;
+}
+
+.carousel-fixed-caption h1 {
+    font-size: 2.1rem;
+    color: #fffbe6;
+    margin-bottom: 9px;
+    text-shadow: 0 3px 18px #000b;
+    font-weight: 700;
+}
+
+.carousel-fixed-caption p {
+    color: #fffbe6;
+    font-size: 1.12rem;
+    margin-bottom: 0;
+    text-shadow: 0 3px 16px #000c;
+}
+
+.carousel-inner {}
+
+@media (max-width: 600px) {
+    .carousel-fixed-caption {
+        padding: 10px 4vw;
+    }
+
+    .carousel-fixed-caption h1 {
+        font-size: 1.22rem;
+    }
+
+    .carousel-fixed-caption p {
+        font-size: 0.96rem;
+    }
+}
+
+.main-content {
+    background: rgba(24, 24, 24, 0.92);
+    box-shadow: 0 4px 24px #0006;
+    margin-top: 18px;
+    padding: 30px 20px;
+}
+
+.graph-container canvas {
+    margin-bottom: 15px;
+    max-height: 150px;
+}
+
+.info-box {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+}
+
+.info-box h2 {
+    color: #ffc107;
+}
+
+.btn-warning {
+    background: linear-gradient(90deg, #ffa300, #ffd23f) !important;
+    color: #232323 !important;
+    font-weight: 700;
+    border-radius: 9px;
+    box-shadow: 0 2px 8px #0003;
+    transition: background 0.22s;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(90deg, #ffc42a, #ffe974) !important;
+    color: #181818 !important;
+}
+
+.btn-danger {
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+/* MINIMIZED FOOTER STYLE */
+.aitu-footer {
+    background: #202125;
+    color: #eee;
+    padding: 14px 8px 7px 8px;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -1px 14px #0003;
+    font-size: 0.98em;
+    margin-top: 32px;
+}
+
+.aitu-footer .footer-content {
+    max-width: 420px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.aitu-footer-logo {
+    height: 26px;
+    margin-bottom: 2px;
+    filter: drop-shadow(0 0 4px #0f0f2040);
+}
+
+.footer-title {
+    font-size: 1.04rem;
+    font-weight: 500;
+    color: #ffc107;
+    margin-bottom: 3px;
+}
+
+.footer-contacts {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    font-size: 0.98em;
+    margin-bottom: 3px;
+}
+
+.footer-contacts a {
+    color: #fffbe6;
+    text-decoration: none;
+    transition: color 0.14s;
+    font-weight: 500;
+    opacity: 0.95;
+}
+
+.footer-contacts a:hover {
+    color: #ffc107;
+    text-decoration: underline;
+    opacity: 1;
+}
+
+.footer-year {
+    font-size: 0.95em;
+    color: #bbbca4;
+    margin-top: 1px;
+}

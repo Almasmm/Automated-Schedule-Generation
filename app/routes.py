@@ -15,13 +15,21 @@ OUTPUTS_FOLDER = os.path.join(PROJECT_ROOT, 'outputs')
 def check_schedule():
     conflict_table = None
     violation_table = None
+    checked = False
     if request.method == "POST":
+        checked = True
         tf = request.files["timetable"]
         gf = request.files.get("ga_input")
         timetable_name = tf.filename
         timetable = json.load(tf)
         conflict_table, violation_table = check_conflicts_and_violations(timetable, timetable_name, gf)
-    return render_template("check.html", conflict_table=conflict_table, violation_table=violation_table)
+    return render_template(
+        'check.html',
+        conflict_table=conflict_table,
+        violation_table=violation_table,
+        checked=checked
+    )
+
 
 @bp.route('/')
 def index():

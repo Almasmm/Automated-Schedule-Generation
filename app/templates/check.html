@@ -3,90 +3,46 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Комбинированная проверка расписания</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #181818;
-            margin: 40px;
-            color: #fff;
-        }
-
-        h1,
-        h2 {
-            color: #ff9800;
-        }
-
-        .upload-form {
-            margin-bottom: 30px;
-        }
-
-        input[type="file"] {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px;
-            border-radius: 6px;
-            margin-right: 10px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 30px;
-            background: #232323;
-            color: #fff;
-        }
-
-        th,
-        td {
-            padding: 8px 14px;
-            border: 1px solid #444;
-        }
-
-        th {
-            background: #ff9800;
-            color: #181818;
-        }
-
-        tr.error-row {
-            background: #2d1b09;
-        }
-
-        .btn {
-            padding: 10px 25px;
-            border: none;
-            background: #ff9800;
-            color: #181818;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: #ffa733;
-        }
-    </style>
+    <title>Проверка расписания | Schedule Validator</title>
+    <link rel="icon" type="image/png" href="/static/assets/aitu-logo_.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/check.css') }}">
 </head>
 
 <body>
-    <h1>Проверка расписания на конфликты и GA_Input</h1>
-    <form class="upload-form" method="post" enctype="multipart/form-data">
-        <label for="timetable">Выберите файл расписания (JSON):</label>
-        <input type="file" name="timetable" accept=".json" required>
-        <label for="ga_input">Выберите файл GA_Input (XLSX):</label>
-        <input type="file" name="ga_input" accept=".xlsx">
-        <button class="btn" type="submit">Проверить</button>
-    </form>
-    {% if conflict_table %}
-    <h2>Конфликты</h2>
-    {{ conflict_table | safe }}
-    {% endif %}
-    {% if violation_table %}
-    <h2>Нарушения по GA_Input</h2>
-    {{ violation_table | safe }}
-    {% endif %}
+    <div class="container">
+        <h1>Проверка расписания</h1>
+        <form class="upload-form" method="post" enctype="multipart/form-data" id="checkForm">
+            <label>Файл расписания (JSON):</label>
+            <input type="file" name="timetable" accept=".json" required>
+            <label>Файл требований GA_Input (XLSX):</label>
+            <input type="file" name="ga_input" accept=".xlsx">
+            <button class="btn" type="submit">Проверить</button>
+        </form>
+        <div id="results-area">
+            {% if checked %}
+            {% if conflict_table %}
+            <center>
+                <h2>Конфликты</h2>
+            </center>
+            {{ conflict_table | safe }}
+            {% else %}
+            <div class="fancy-success">
+                <span class="msg">Конфликты в расписании <b>не обнаружены</b>.
+                </span>
+            </div>
+            {% endif %}
+            {% if violation_table %}
+            <h2>Нарушения по GA_Input</h2>
+            {{ violation_table | safe }}
+            {% else %}
+            <div class="fancy-success">
+                <span class="msg">Все требования GA_Input соблюдены.</span>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/check.js') }}"></script>
 </body>
 
 </html>
