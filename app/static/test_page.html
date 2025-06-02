@@ -15,26 +15,26 @@
 <body>
     <div class="overlay">
         <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-dark justify-content-center">
-            <div class="container">
-                <a class="navbar-brand d-flex align-items-center" href="/">
-                    <img src="/static/assets/aitu-logo_.png" alt="AITU Logo" class="aitu-logo me-2" />
-                    <span>Astana IT University</span>
+        <nav class="aitu-navbar">
+            <div class="aitu-navbar-container">
+                <!-- Logo on the left -->
+                <a class="aitu-logo-link" href="/">
+                    <img src="/static/assets/aitu-logo_.png" alt="AITU Logo" class="aitu-navbar-logo" />
+                    <span class="aitu-navbar-title">Astana IT University</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#aituNavbarMenu"
-                    aria-controls="aituNavbarMenu" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="aituNavbarMenu">
-                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#main-content" id="generateScheduleLink">Generate Schedule</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/check">Test Schedule</a>
-                        </li>
-                    </ul>
+                <!-- Hamburger & Menu -->
+                <input type="checkbox" id="aitu-menu-toggle" />
+                <div class="aitu-hamburger-lines">
+                    <span class="aitu-line aitu-line1"></span>
+                    <span class="aitu-line aitu-line2"></span>
+                    <span class="aitu-line aitu-line3"></span>
                 </div>
+                <ul class="aitu-menu-items">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="#main-content" id="generateScheduleLink">Generate Schedule</a></li>
+                    <li><a href="/check">Test Schedule</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                </ul>
             </div>
         </nav>
 
@@ -53,82 +53,139 @@
                     </div>
                 </div>
                 <div class="carousel-fixed-caption">
-                    <h1>Smarter Scheduling Starts Here</h1>
+                    <h1>Automated Scheduling System</h1>
                     <p>
-                        A modern tool for creating effective university timetables. Fast, adaptive, and easy to use.
+                        A modern tool for creating effective university timetables.
                     </p>
                 </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="overlay">
-            <div class="container main-content" id="main-content">
-                <div class="row">
-                    <div class="col-md-4 graph-container">
-                        <canvas id="cpuChart"></canvas>
-                        <canvas id="ramChart"></canvas>
-                        <canvas id="memoryChart"></canvas>
+
+        <!-- Main Content (Full Width, No Container) -->
+        <div class="main-content" id="main-content">
+            <div class="main-content-row">
+                <div class="main-metrics">
+                    <canvas id="cpuChart"></canvas>
+                    <canvas id="ramChart"></canvas>
+                    <canvas id="memoryChart"></canvas>
+                    <canvas id="fitnessTrendChart"></canvas>
+                    <div id="fitnessInterpretation" class="mt-3"
+                        style="font-weight: 500; font-size: 1.1em; color: #117964;">
                     </div>
-                    <div class="col-md-8">
-                        <div class="info-box">
-                            <h2 class="text-center">Automated Schedule Generation Platform</h2>
-                            <p>
-                                Our platform uses a Genetic Algorithm to generate university timetables based on
-                                faculty, student groups, rooms, and availability. It optimizes constraints and outputs a
-                                ready-to-use Excel file.<br><br>
-                                Below are real-time metrics showing the algorithm's performance, such as generation
-                                accuracy, conflict rate, constraint satisfaction, and fitness score.<br><br>
-                                Please select the trimester and upload the dataset to generate a new schedule.
-                            </p>
-                            <div class="mb-3">
-                                <label for="trimester" class="form-label fw-bold fs-5 text-center d-block">Select
-                                    Trimester</label>
-                                <select class="form-select" id="trimester">
-                                    <option value="1">Trimester 1</option>
-                                    <option value="2">Trimester 2</option>
-                                    <option value="3">Trimester 3</option>
-                                </select>
+                </div>
+                <div class="info-box">
+                    <h2 class="text-center mb-4">Schedule Generation</h2>
+
+                    <!-- Info/Instruction Block -->
+                    <div class="instructions-card mb-4">
+                        <div class="instructions-title">
+                            <span class="instructions-icon">ℹ️</span>
+                            How to use this tool ?
+                        </div>
+                        <ul class="instructions-list">
+                            <li>Use the provided template for your GA Input Excel file.</li>
+                            <li>Choose the trimester (current academic year) and upload your dataset to generate a new
+                                schedule.</li>
+                            <li>You can test generated schedules for errors or conflicts.</li>
+                            <li>After processing, you'll be able to download your Excel schedule.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Controls Row (Trimester + Upload) -->
+                    <div class="row flex-controls mb-3 g-0">
+                        <!-- Trimester Selection (left) -->
+                        <div
+                            class="col-md-5 d-flex flex-column justify-content-center align-items-center align-items-md-start">
+                            <label class="fw-bold form-label mb-2">2024 / Select Trimester</label>
+                            <div class="trimester-options flex-column w-100 gap-1">
+                                <label class="trimester-radio">
+                                    <input type="radio" name="trimester" value="1" checked>
+                                    <span>Trimester 1</span>
+                                </label>
+                                <label class="trimester-radio">
+                                    <input type="radio" name="trimester" value="2">
+                                    <span>Trimester 2</span>
+                                </label>
+                                <label class="trimester-radio">
+                                    <input type="radio" name="trimester" value="3">
+                                    <span>Trimester 3</span>
+                                </label>
                             </div>
-                            <div class="mb-3">
-                                <label for="datasetUpload" class="form-label fw-bold fs-5 text-center d-block">Upload
-                                    Dataset</label>
-                                <input class="form-control" type="file" id="datasetUpload">
+                        </div>
+                        <!-- Upload Section (right) -->
+                        <div
+                            class="col-md-7 d-flex flex-column justify-content-center align-items-center align-items-md-start">
+                            <label for="datasetUpload" class="fw-bold form-label mb-2">Upload Dataset</label>
+                            <div class="file-drop-area file-drop-compact w-100 mb-2" id="fileDropArea">
+                                <span class="file-drop-message" id="fileDropMsg">
+                                    Drag &amp; drop Excel file<br>or click to select
+                                </span>
+                                <input class="form-control file-input" type="file" id="datasetUpload"
+                                    style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;">
                             </div>
-                            <button class="btn btn-warning w-100 mb-2" id="generateBtn">Generate Schedule</button>
-                            <a href="/check" class="btn btn-danger w-100" id="validateBtn">Test for Errors</a>
-                            <center>
-                                <p class="mt-3">After processing, an Excel file with the schedule will be available for
-                                    download.</p>
-                            </center>
+                            <div id="fileNameDisplay" class="file-name-display mb-2"></div>
+                            <div class="d-flex flex-row gap-2 w-100">
+                                <button class="btn btn-warning flex-grow-1" id="generateBtn">Generate Schedule</button>
+                                <a href="/check" class="btn btn-danger flex-grow-1" id="validateBtn">Test for Errors</a>
+                            </div>
+                            <div class="d-flex flex-column align-items-center justify-content-center w-100">
+                                <div class="mt-3 text-center">
+                                    <strong><i><span class="text-muted">Supported formats: .xlsx, .xls</span></i>
+                                    </strong>
+                                </div>
+                                <p class="mt-0 text-center text-muted mb-0">
+                                    <strong><i>After processing, an Excel and Json file with the schedule will be
+                                            available for
+                                            download.</i></strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metrics-panel">
+                        <div class="metric-card">
+                            <div class="metric-label">Fitness Score</div>
+                            <div class="metric-value" id="fitnessScore">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Conflicts</div>
+                            <div class="metric-value metric-danger" id="conflictsCount">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Hard Constraints</div>
+                            <div class="metric-value" id="hardConstraints">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Soft Constraints</div>
+                            <div class="metric-value" id="softConstraints">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Generation Time</div>
+                            <div class="metric-value" id="genTime">—</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <footer class="aitu-footer">
-                <div class="footer-content">
+        </div>
+
+        <footer class="aitu-footer">
+            <div class="footer-content">
+                <div class="footer-left">
                     <img src="https://static.tildacdn.pro/tild3632-6531-4436-a133-333134313137/aitu-logo_.png"
                         alt="AITU Logo" class="aitu-footer-logo">
-                    <div class="footer-title">Astana IT University</div>
+                    <span class="footer-title">Astana IT University</span>
+                </div>
+                <div class="footer-right">
                     <div class="footer-contacts">
-                        <a href="221015@astanait.edu.kz" title="Email Rakhim">Rakhim A.</a>
-                        <a href="221559@astanait.edu.kz" title="Email Aniyar">Aniyar B.</a>
-                        <a href="221309@astanait.edu.kz" title="Email Almas">Almas M.</a>
+                        <a href="mailto:221015@astanait.edu.kz" title="Email Rakhim">Rakhim A.</a>
+                        <a href="mailto:221559@astanait.edu.kz" title="Email Aniyar">Aniyar B.</a>
+                        <a href="mailto:221309@astanait.edu.kz" title="Email Almas">Almas M.</a>
                     </div>
                     <div class="footer-year">© 2025 - Thesis project</div>
                 </div>
-            </footer>
-        </div>
+            </div>
+        </footer>
+
     </div>
 
     <script src="/static/js/main.js"></script>

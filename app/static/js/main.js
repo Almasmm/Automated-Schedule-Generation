@@ -1,6 +1,13 @@
-// Chart.js metrics section
-const createChart = (id, label, color) => {
-    return new Chart(document.getElementById(id).getContext('2d'), {
+// --- TRIMESTER SELECTION ---
+const getSelectedTrimester = () => {
+    return document.querySelector('input[name="trimester"]:checked').value;
+};
+
+// --- CHART INITIALIZERS ---
+function createChart(id, label, color) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return null;
+    return new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
@@ -15,46 +22,77 @@ const createChart = (id, label, color) => {
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    labels: { color: 'white' }
-                }
+                legend: { labels: { color: '#117964' } }
             },
             scales: {
-                x: { ticks: { color: 'white' } },
-                y: { ticks: { color: 'white' }, beginAtZero: true }
+                x: { ticks: { color: '#117964' } },
+                y: { ticks: { color: '#117964' }, beginAtZero: true }
             }
         }
     });
-};
-const cpuChart = createChart('cpuChart', 'CPU Load', 'orange');
-const ramChart = createChart('ramChart', 'RAM Load', 'lightgreen');
-const memoryChart = createChart('memoryChart', 'Memory Load', 'skyblue');
-const internetChart = createChart('internetChart', 'Internet Load', 'red');
+}
 
-const updateCharts = () => {
+let cpuChart, ramChart, memoryChart, fitnessTrendChart;
+
+document.addEventListener('DOMContentLoaded', function () {
+    cpuChart = createChart('cpuChart', 'CPU Load', '#117964');
+    ramChart = createChart('ramChart', 'RAM Load', '#19be94');
+    memoryChart = createChart('memoryChart', 'Memory Load', '#ffc107');
+    fitnessTrendChart = createChart('fitnessTrendChart', 'Fitness Score Trend', '#0b96ff');
+
+    // Simulate only system metrics for demo
+    setInterval(function () {
+        const time = new Date().toLocaleTimeString();
+        const pushData = (chart, value) => {
+            if (!chart) return;
+            if (chart.data.labels.length > 10) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(value);
+            chart.update();
+        };
+        pushData(cpuChart, Math.random() * 100);
+        pushData(ramChart, Math.random() * 50);
+        pushData(memoryChart, 80 + Math.random() * 20);
+        // DO NOT push demo fitness data!
+    }, 2000);
+});
+
+// --- FITNESS CHART UPDATE WITH REAL DATA ---
+function updateFitnessTrend(realFitnessScore) {
     const time = new Date().toLocaleTimeString();
-    const pushData = (chart, value) => {
-        if (chart.data.labels.length > 10) {
-            chart.data.labels.shift();
-            chart.data.datasets[0].data.shift();
-        }
-        chart.data.labels.push(time);
-        chart.data.datasets[0].data.push(value);
-        chart.update();
-    };
-    pushData(cpuChart, Math.random() * 100);
-    pushData(ramChart, Math.random() * 50);
-    pushData(memoryChart, 80 + Math.random() * 20);
-    pushData(internetChart, Math.random() * 100);
-};
-setInterval(updateCharts, 2000);
+    if (!fitnessTrendChart) return;
+    if (fitnessTrendChart.data.labels.length > 10) {
+        fitnessTrendChart.data.labels.shift();
+        fitnessTrendChart.data.datasets[0].data.shift();
+    }
+    fitnessTrendChart.data.labels.push(time);
+    fitnessTrendChart.data.datasets[0].data.push(realFitnessScore);
+    fitnessTrendChart.update();
 
-// Schedule generation logic
+    document.getElementById('fitnessInterpretation').innerHTML = getFitnessInterpretation(realFitnessScore);
+}
+
+function getFitnessInterpretation(score) {
+    if (score >= 98) {
+        return '🟢 <strong>Excellent schedule!</strong> (Very high fitness, near-perfect constraint satisfaction)';
+    } else if (score >= 90) {
+        return '🟢 <strong>Good schedule.</strong> (Minor issues, but most constraints are satisfied)';
+    } else if (score >= 75) {
+        return '🟡 <strong>Average schedule.</strong> (Consider revising input data; some constraints not met)';
+    } else {
+        return '🔴 <strong>Poor schedule!</strong> (Many conflicts or constraints violated, please check input)';
+    }
+}
+
+// --- SCHEDULE GENERATION LOGIC (REAL DATA!) ---
 document.addEventListener('DOMContentLoaded', function () {
     const generateBtn = document.getElementById("generateBtn");
     if (generateBtn) {
         generateBtn.addEventListener("click", async function () {
-            const trimester = document.getElementById("trimester").value;
+            const trimester = getSelectedTrimester();
             const fileInput = document.getElementById("datasetUpload");
             if (!fileInput.files.length) {
                 alert("Please upload your GA Input Excel file first!");
@@ -69,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
             this.innerHTML = 'Processing... <span class="spinner-border spinner-border-sm"></span>';
 
             try {
-                // 1. Generate schedule and download Excel
+                // 1. Generate schedule and get metrics (assume JSON with metrics is returned)
                 const response = await fetch('/generate_schedule', {
                     method: 'POST',
                     body: formData
@@ -77,35 +115,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (!response.ok) throw new Error("Failed to generate schedule!");
 
-                // Download the Excel file
-                const blob = await response.blob();
-                const downloadUrl = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = downloadUrl;
-                a.download = `timetable_T${trimester}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(downloadUrl);
+                // If backend returns JSON metrics (not file) directly:
+                const metrics = await response.json();
 
-                // 2. Automatically download the JSON file right after
-                const jsonResponse = await fetch(`/download_json?trimester=${trimester}`);
-                if (jsonResponse.ok) {
-                    const jsonBlob = await jsonResponse.blob();
-                    const jsonUrl = URL.createObjectURL(jsonBlob);
-                    const a2 = document.createElement("a");
-                    a2.href = jsonUrl;
-                    a2.download = `timetable_T${trimester}.json`;
-                    document.body.appendChild(a2);
-                    a2.click();
-                    a2.remove();
-                    URL.revokeObjectURL(jsonUrl);
-                } else {
-                    alert("Schedule generated, but JSON file not found!");
-                }
+                // Update fitness chart with the REAL value
+                updateFitnessTrend(metrics.fitnessScore);
+
+                // Update the metrics panel/cards as well:
+                showMetrics(metrics);
+
+                // Optionally, download Excel and/or JSON file if you want:
+                // If you get a file instead, you'll need a separate fetch for metrics!
 
                 this.innerHTML = "Generate Schedule";
-                document.getElementById("afterGenButtons").style.display = "";
             } catch (e) {
                 alert("Error: " + e.message);
                 this.innerHTML = "Generate Schedule";
@@ -115,16 +137,65 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-document.addEventListener("DOMContentLoaded", function () {
+// --- METRICS CARD UPDATE ---
+function showMetrics(metrics) {
+    document.getElementById('fitnessScore').textContent = metrics.fitnessScore + '%';
+    document.getElementById('conflictsCount').textContent = metrics.conflicts;
+    document.getElementById('hardConstraints').textContent = metrics.hard + '%';
+    document.getElementById('softConstraints').textContent = metrics.soft + '%';
+    document.getElementById('genTime').textContent = metrics.time + 's';
+}
+
+// --- SMOOTH SCROLL FOR NAVBAR LINK ---
+document.addEventListener('DOMContentLoaded', function () {
     const link = document.getElementById("generateScheduleLink");
     if (link) {
         link.addEventListener("click", function (e) {
-            e.preventDefault();
-            const scheduleSection = document.getElementById("main-content");
-            if (scheduleSection) {
-                scheduleSection.scrollIntoView({ behavior: 'smooth' });
+            if (window.location.pathname === "/" || window.location.pathname.endsWith("/index.html")) {
+                e.preventDefault();
+                const target = document.getElementById("main-content");
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                const menuToggle = document.getElementById('aitu-menu-toggle');
+                if (menuToggle) menuToggle.checked = false;
             }
         });
     }
 });
 
+// --- DRAG & DROP FILE UPLOAD LOGIC ---
+document.addEventListener("DOMContentLoaded", function () {
+    const dropArea = document.getElementById("fileDropArea");
+    const fileInput = document.getElementById("datasetUpload");
+    const fileNameDisplay = document.getElementById("fileNameDisplay");
+
+    if (!dropArea || !fileInput) return;
+
+    dropArea.addEventListener('click', () => fileInput.click());
+    dropArea.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropArea.classList.add('dragover');
+    });
+    dropArea.addEventListener('dragleave', function (e) {
+        dropArea.classList.remove('dragover');
+    });
+    dropArea.addEventListener('drop', function (e) {
+        e.preventDefault();
+        dropArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            showFileName(fileInput.files[0]);
+        }
+    });
+    fileInput.addEventListener('change', function () {
+        if (fileInput.files.length > 0) {
+            showFileName(fileInput.files[0]);
+        } else if (fileNameDisplay) {
+            fileNameDisplay.textContent = "";
+        }
+    });
+
+    function showFileName(file) {
+        if (fileNameDisplay)
+            fileNameDisplay.textContent = "Selected: " + file.name;
+    }
+});
