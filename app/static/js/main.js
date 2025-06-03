@@ -199,3 +199,9 @@ document.addEventListener("DOMContentLoaded", function () {
             fileNameDisplay.textContent = "Selected: " + file.name;
     }
 });
+
+document.querySelectorAll('.aitu-menu-items a').forEach(link => {
+    link.addEventListener('click', () => {
+        document.getElementById('aitu-menu-toggle').checked = false;
+    });
+});
