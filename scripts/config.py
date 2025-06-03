@@ -1,11 +1,11 @@
 # scripts/config.py
 
 # GA Hyperparameters
-POPULATION_SIZE = 50
-GENERATIONS = 100
-MUTATION_RATE = 0.1
-CROSSOVER_RATE = 0.9
-EARLY_STOP_GENERATIONS = 2
+POPULATION_SIZE = 200     
+GENERATIONS = 150         
+MUTATION_RATE = 0.12      
+CROSSOVER_RATE = 0.88    
+EARLY_STOP_GENERATIONS = 25
 
 # Trimester-based paths
 INPUT_FILE = "inputs/GA_input.xlsx"
@@ -34,10 +34,18 @@ GROUP_YEAR_DAYS = {
 CURRENT_YEAR = 2024
 
 # Rooms to exclude (labs)
-EXCLUDED_ROOMS = []
+EXCLUDED_ROOMS = [
+    "C1.2.124", "C1.1.260", "C1.3.122", "C1.3.124",
+    "C1.3.327", "C1.3.324"
+]
 
 # Session types
 SESSION_TYPES = ["Lecture", "Practice", "Lab"]
 
 # Course keywords to exclude
-EXCLUDED_COURSES = []
+EXCLUDED_COURSES = [
+    "Industrial Practice",
+    "Diploma Work",
+    "Educational Practice",
+    "Undergraduate Practice"
+]

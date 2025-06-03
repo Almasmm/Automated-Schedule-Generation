@@ -1,5 +1,3 @@
-# scripts/gene.py
-
 from dataclasses import dataclass
 
 @dataclass
@@ -10,7 +8,8 @@ class Gene:
     day: str
     time: str  # e.g. "08:00"
     room: str
-    instructor: str = None  # FUTURE DEVELOPMENT: Add instructor support
+    instructor: str = None  # optional, manually assigned
+    delivery_mode: str = "offline"  # "offline" or "online"
 
     def to_dict(self):
         """Return dictionary format for JSON export"""
@@ -21,8 +20,10 @@ class Gene:
             "day": self.day,
             "time": self.time,
             "room": self.room,
-            "instructor": self.instructor or "TBD"
+            "instructor": self.instructor or "TBD",
+            "delivery_mode": self.delivery_mode
         }
 
     def __str__(self):
-        return f"{self.day} {self.time} | {self.course:25} | {self.type:<8} | {self.room:<10} | {self.instructor or 'TBD'}"
+        return (f"{self.day} {self.time} | {self.course:25} | {self.type:<8} | "
+                f"{self.room:<10} | {self.delivery_mode:<7} | {self.instructor or 'TBD'}")

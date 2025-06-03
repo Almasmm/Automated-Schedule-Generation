@@ -16,9 +16,9 @@ def generate_schedule(input_excel_path, trimester):
 
     raw_genes = extract_raw_genes(groups_df, courses_df, trimester)
     valid_rooms = rooms_df["Room"].tolist()
-    best_schedule = run_scheduler(raw_genes, valid_rooms)
+    best_schedule, fitness_progress = run_scheduler(raw_genes, valid_rooms) 
 
-    return best_schedule  # Chromosome object
+    return best_schedule, fitness_progress
 
 def save_schedule(chromosome, output_excel_path, output_json_path):
     export_to_excel(chromosome, output_excel_path)

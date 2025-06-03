@@ -5,14 +5,14 @@ from scripts.config import (
     INPUT_FILE, EXCLUDED_COURSES, EXCLUDED_ROOMS, CURRENT_YEAR
 )
 
-# Loading all relevant sheets from input file
 def load_excel_data():
+    """Load all relevant sheets from GA_input.xlsx"""
     xl = pd.ExcelFile(INPUT_FILE)
     sheets = {sheet_name: xl.parse(sheet_name) for sheet_name in xl.sheet_names}
     return sheets
 
-# Determine the study year based on group name
 def determine_group_year(group_name: str) -> int:
+    """Infer year of the group from its name like 'IT-2201'"""
     try:
         admission_year = int(group_name.split("-")[1][:2]) + 2000
         study_year = CURRENT_YEAR - admission_year + 1
@@ -20,8 +20,8 @@ def determine_group_year(group_name: str) -> int:
     except Exception:
         return -1  # fallback if parsing fails
 
-# Preprocess data from the loaded Excel sheets
 def preprocess_data():
+    """Load, filter, and structure input data"""
     data = load_excel_data()
 
     groups_df = data.get("Groups")
@@ -36,12 +36,11 @@ def preprocess_data():
         courses_df = pd.concat(curriculum_sheets, ignore_index=True)
     else:
         raise ValueError("No curriculum sheets found in input Excel file!")
-    
-# Clean up groups DataFrame
+
+    # Clean up for case/type mismatches
     courses_df["EP"] = courses_df["EP"].astype(str).str.upper().str.strip()
     courses_df = courses_df.dropna(subset=["trimester"])
     courses_df["trimester"] = courses_df["trimester"].astype(int)
-
 
     rooms_df = data.get("Rooms")
     instructors_df = data.get("Instructors")
@@ -66,6 +65,9 @@ def preprocess_data():
     }
 
 def extract_raw_genes(groups_df, courses_df, trimester):
+    """
+    Extracts initial raw genes (events) for the GA, grouped by group and trimester logic.
+    """
     raw_genes = []
 
     group_name_col = [c for c in groups_df.columns if "group" in c.lower()][0]
@@ -78,13 +80,11 @@ def extract_raw_genes(groups_df, courses_df, trimester):
     def get_admission_year(group_name):
         return int(group_name.split("-")[1][:2]) + 2000
 
-    from scripts.config import CURRENT_YEAR
-
     for _, group_row in groups_df.iterrows():
         group_name = group_row[group_name_col]
         ep = get_ep_from_group(group_name).upper().strip()
         admission_year = get_admission_year(group_name)
-        study_year = CURRENT_YEAR - admission_year  # <-- THIS LINE FIXED
+        study_year = CURRENT_YEAR - admission_year  # <-- important logic fix
 
         curriculum_trimester = (study_year) * 3 + trimester - 3
         # (study_year = 1) => 1st year: trimester 1,2,3

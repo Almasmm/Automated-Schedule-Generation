@@ -12,7 +12,7 @@ INPUTS_FOLDER = os.path.join(PROJECT_ROOT, 'inputs')
 OUTPUTS_FOLDER = os.path.join(PROJECT_ROOT, 'outputs')
 
 @bp.route("/check", methods=["GET", "POST"])
-def check_schedule():
+def check_schedule():   
     conflict_table = None
     violation_table = None
     checked = False
@@ -33,7 +33,7 @@ def check_schedule():
 
 @bp.route('/')
 def index():
-    return send_from_directory('static', 'test_page.html')
+    return render_template('main_page.html')
 
 
 @bp.route('/generate_schedule', methods=['POST'])
@@ -45,14 +45,37 @@ def generate_schedule_route():
     os.makedirs(INPUTS_FOLDER, exist_ok=True)
     input_path = os.path.join(INPUTS_FOLDER, 'GA_input.xlsx')
     file.save(input_path)
+    # Import here to avoid circular imports
+    from app.ga.ga_engine import generate_schedule, save_schedule
+    import time
     try:
-        subprocess.run([sys.executable, '-m', 'scripts.run_generate', str(trimester)], check=True)
-    except subprocess.CalledProcessError as e:
+        start = time.time()
+        # Generate the best schedule (Chromosome object)
+        best_schedule = generate_schedule(input_path, int(trimester))
+        elapsed = round(time.time() - start, 2)
+        # Save the outputs (Excel, JSON)
+        excel_out = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.xlsx')
+        json_out = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.json')
+        save_schedule(best_schedule, excel_out, json_out)
+        # Get fitness/conflicts/hard/soft
+        fitness_score = best_schedule.fitness
+        # For hard/soft constraint breakdown, you may need to enhance your evaluate_fitness to return both
+        # For now, let's just send the total fitness
+        # Count conflicts (very basic: hard penalty occurrences)
+        conflicts = int(fitness_score // 1000) # You may improve this logic!
+        best_schedule, fitness_progress = generate_schedule(input_path, int(trimester))
+        metrics = {
+            "fitnessScore": round(10000 / (1 + fitness_score), 2),
+            "conflicts": conflicts,
+            "hard": "-",    
+            "soft": "-",    
+            "time": elapsed,
+            "fitness_progress": fitness_progress
+        }
+        return jsonify(metrics)
+    except Exception as e:
         return jsonify({'error': 'Schedule generation failed!', 'details': str(e)}), 500
-    excel_out = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.xlsx')
-    if not os.path.exists(excel_out):
-        return jsonify({'error': 'No output Excel generated!'}), 500
-    return send_file(excel_out, as_attachment=True, download_name=f'timetable_T{trimester}.xlsx')
+
 
 @bp.route('/download_excel')
 def download_excel():

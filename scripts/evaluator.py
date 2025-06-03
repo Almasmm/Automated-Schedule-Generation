@@ -12,40 +12,66 @@ def evaluate_fitness(genes):
     group_day_slots = defaultdict(lambda: defaultdict(list))
 
     for g in genes:
-     
         key_time = (g.day, g.time)
         key_room = (g.room, g.day, g.time)
         key_group = (g.group, g.day, g.time)
 
-        # Collect for clash detection
-        room_schedule[key_room].append(g)
         group_schedule[key_group].append(g)
         group_day_slots[g.group][g.day].append(g.time)
 
-        # Check time range constraints
+        # Determine year and allowed days/slots
         year = int(g.group.split("-")[1][:2])
         admission_year = 2000 + year
-        study_year = 2024 - admission_year 
+        study_year = 2024 - admission_year
         allowed_days = GROUP_YEAR_DAYS.get(study_year, [])
         allowed_slots = FIRST_YEAR_TIMESLOTS if study_year == 1 else UPPER_YEAR_TIMESLOTS
 
-        if g.day not in allowed_days:
-            hard_penalty += 100
-        if g.time not in allowed_slots:
-            hard_penalty += 100
+        # Online lectures: only 18:00 or 19:00 are valid times
+        if getattr(g, "delivery_mode", "offline") == "online" and g.type.lower() == "lecture":
+            if g.time not in ["18:00", "19:00"]:
+                hard_penalty += 1000
+        else:
+            if g.day not in allowed_days:
+                hard_penalty += 100
+            if g.time not in allowed_slots:
+                hard_penalty += 100
 
-    # HARD CONSTRAINTS
-    for val in room_schedule.values():
+        # Only add offline classes to room schedule for room conflict checks
+        if getattr(g, "delivery_mode", "offline") != "online":
+            room_schedule[key_room].append(g)
+
+    # HARD CONSTRAINTS: Room conflicts (offline only, with special handling for PE/Gym and joint lectures)
+    for key, val in room_schedule.items():
+        room, day, time = key
+
+        # Skip PE in gym conflicts
         if all(("physical education" in g.course.lower() or g.course.strip().upper() == "PE") and g.room.strip().lower() == "gym" for g in val):
-            continue  # Skip conflict checking for Gym PE sessions
-        if len(val) > 1:
-            hard_penalty += 1000 * (len(val) - 1)  # Room conflict
+            continue
 
+        all_lectures = all(g.type.lower() == "lecture" for g in val)
+
+        joint_keys = set()
+        for g in val:
+            ep = g.group.split("-")[0].upper()
+            year_num = int(g.group.split("-")[1][:2])
+            admission_year = 2000 + year_num
+            study_year = 2024 - admission_year
+            joint_keys.add((g.course, g.type, ep, study_year))
+
+        # Allow joint lectures for same course if <= 5
+        if all_lectures and len(joint_keys) == 1:
+            if len(val) > 5:
+                hard_penalty += 1000 * (len(val) - 5)
+        else:
+            if len(val) > 1:
+                hard_penalty += 1000 * (len(val) - 1)
+
+    # HARD: Group conflicts (online and offline)
     for val in group_schedule.values():
         if len(val) > 1:
-            hard_penalty += 1000 * (len(val) - 1)  # Group conflict
+            hard_penalty += 1000 * (len(val) - 1)
 
-    # PRACTICE BEFORE LECTURE
+    # SOFT: Practice before lecture (by course)
     seen_lectures = set()
     seen_practices = set()
     for g in genes:
@@ -53,9 +79,9 @@ def evaluate_fitness(genes):
         if g.type.lower() == "lecture":
             seen_lectures.add(tag)
         elif g.type.lower() == "practice" and tag not in seen_lectures:
-            soft_penalty += 10  # allow it but penalize
+            soft_penalty += 10
 
-    # SOFT CONSTRAINTS
+    # SOFT: Gaps in group schedule per day
     for group, days in group_day_slots.items():
         for day, times in days.items():
             times_sorted = sorted(times)
@@ -65,7 +91,6 @@ def evaluate_fitness(genes):
                 curr = int(times_sorted[i][:2])
                 if curr - prev > 1:
                     gaps += curr - prev - 1
-            soft_penalty += gaps * 100  # each idle gap is slightly penalized
+            soft_penalty += gaps * 100
 
-    # Return total penalty
     return hard_penalty + soft_penalty
