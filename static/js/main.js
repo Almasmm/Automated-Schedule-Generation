@@ -1,3 +1,5 @@
+// static/js/main.js
+
 const getSelectedTrimester = () => document.querySelector('input[name="trimester"]:checked').value;
 
 function createChart(id, label, color) {
@@ -105,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         triggerDownload(`/download_json?trimester=${getSelectedTrimester()}`);
     };
+
 
     // Generate button logic
     const generateBtn = document.getElementById("generateBtn");

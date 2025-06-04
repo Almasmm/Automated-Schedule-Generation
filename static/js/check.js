@@ -1,17 +1,46 @@
-// check.js
+// static/js/check.js
+document.addEventListener("DOMContentLoaded", function () {
+    function setupDropZone(zoneId, inputId, nameId) {
+        const dropZone = document.getElementById(zoneId);
+        const fileInput = document.getElementById(inputId);
+        const fileNameDiv = document.getElementById(nameId);
 
-window.addEventListener('DOMContentLoaded', function () {
-    if (document.querySelector('.fancy-success')) {
-        const emoji = document.querySelector('.fancy-success .emoji');
-        if (emoji) {
-            emoji.animate([
-                { transform: 'rotate(-6deg) scale(1.1)', color: '#f6c947' },
-                { transform: 'rotate(5deg) scale(1.2)', color: '#a7f76e' },
-                { transform: 'rotate(-2deg) scale(1.08)', color: '#f6c947' }
-            ], {
-                duration: 800,
-                iterations: 2
-            });
-        }
+        if (!dropZone || !fileInput) return;
+
+        // Highlight on dragover
+        dropZone.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add("dragover");
+        });
+        // Remove highlight on dragleave
+        dropZone.addEventListener("dragleave", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove("dragover");
+        });
+        // Handle drop
+        dropZone.addEventListener("drop", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove("dragover");
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                if (fileNameDiv) fileNameDiv.textContent = files[0].name;
+            }
+        });
+        // Click to open file dialog
+        dropZone.addEventListener("click", function () {
+            fileInput.click();
+        });
+        // Show file name on selection
+        fileInput.addEventListener("change", function () {
+            if (fileNameDiv)
+                fileNameDiv.textContent = fileInput.files.length ? fileInput.files[0].name : "";
+        });
     }
+
+    setupDropZone("timetable-zone", "timetable", "timetable-name");
+    setupDropZone("gainput-zone", "ga_input", "ga-name");
 });

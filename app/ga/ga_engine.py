@@ -5,7 +5,6 @@ from scripts.scheduler import run_scheduler
 from scripts.exporter import export_to_excel, export_to_json
 
 def generate_schedule(input_excel_path, trimester):
-    # Patch config to use the right input file
     import scripts.config as config
     config.INPUT_FILE = input_excel_path
 

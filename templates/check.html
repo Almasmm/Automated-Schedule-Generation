@@ -1,48 +1,224 @@
+<!-- templates/check.html -->
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Проверка расписания | Schedule Validator</title>
-    <link rel="icon" type="image/png" href="/static/assets/aitu-logo_.png">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/check.css') }}">
+    <meta charset="utf-8" />
+    <title>Schedule Validator</title>
+    <link rel="icon" href="/static/assets/aitu-logo_.png" type="image/png" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/static/css/main.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .btn-custom {
+            background-color: #6c63ff;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            padding: 1rem 3rem;
+            transition: background-color 0.3s ease;
+            border: none;
+        }
+
+        .btn-custom:hover {
+            background-color: #574fd6;
+        }
+
+        footer.aitu-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .aitu-footer .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .aitu-footer .footer-contacts a {
+            margin-right: 1rem;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #dee2e6;
+        }
+
+        .styled-table thead {
+            background-color: #f1f1f1;
+        }
+
+        .styled-table th,
+        .styled-table td {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .numbered-table tbody tr {
+            counter-increment: rowNumber;
+        }
+
+        .numbered-table tbody tr td:first-child::before {
+            content: counter(rowNumber);
+            display: inline-block;
+            width: 1.5em;
+            margin-right: 0.5em;
+            font-weight: bold;
+        }
+
+        .file-input-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .file-drop-zone {
+            flex: 1 1 45%;
+            border: 2px dashed #6c63ff;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f9f9ff;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        .file-drop-zone:hover {
+            background-color: #ececff;
+        }
+
+        .file-drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-drop-zone label {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #444;
+            cursor: pointer;
+        }
+
+        .file-name {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Проверка расписания</h1>
+    <nav class="aitu-navbar">
+        <div class="aitu-navbar-container">
+            <a class="aitu-logo-link" href="/">
+                <img src="/static/assets/aitu-logo_.png" alt="AITU Logo" class="aitu-navbar-logo" />
+                <span class="aitu-navbar-title">Astana IT University</span>
+            </a>
+            <input type="checkbox" id="aitu-menu-toggle" />
+            <div class="aitu-hamburger-lines">
+                <span class="aitu-line aitu-line1"></span>
+                <span class="aitu-line aitu-line2"></span>
+                <span class="aitu-line aitu-line3"></span>
+            </div>
+            <ul class="aitu-menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="#main-content" id="generateScheduleLink">Generate Schedule</a></li>
+                <li><a href="/check">Test Schedule</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container py-5 mb-5">
+        <h1 class="mb-4">Schedule Validation</h1>
         <form class="upload-form" method="post" enctype="multipart/form-data" id="checkForm">
-            <label>Файл расписания (JSON):</label>
-            <input type="file" name="timetable" accept=".json" required>
-            <label>Файл требований GA_Input (XLSX):</label>
-            <input type="file" name="ga_input" accept=".xlsx">
-            <button class="btn" type="submit">Проверить</button>
+            <div class="file-input-row mb-4">
+                <div class="file-drop-zone" id="timetable-zone">
+                    <label for="timetable">Drag & drop or click to select your Schedule File (JSON)</label>
+                    <input type="file" id="timetable" name="timetable" accept=".json" required>
+                    <div class="file-name" id="timetable-name"></div>
+                </div>
+                <div class="file-drop-zone" id="gainput-zone">
+                    <label for="ga_input">Drag & drop or click to select your GA_Input Requirements File (XLSX)</label>
+                    <input type="file" id="ga_input" name="ga_input" accept=".xlsx">
+                    <div class="file-name" id="ga-name"></div>
+                </div>
+            </div>
+            <div class="text-center">
+                <button class="btn btn-custom w-100" type="submit">Validate</button>
+            </div>
         </form>
-        <div id="results-area">
+
+        <section id="results-area" class="mt-5">
             {% if checked %}
             {% if conflict_table %}
-            <center>
-                <h2>Конфликты</h2>
-            </center>
-            {{ conflict_table | safe }}
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Conflicts Detected</h4>
+                <div class="table-responsive">
+                    <table class="table styled-table">
+                        {{ conflict_table | safe }}
+                    </table>
+                </div>
+            </div>
             {% else %}
-            <div class="fancy-success">
-                <span class="msg">Конфликты в расписании <b>не обнаружены</b>.
-                </span>
+            <div class="alert alert-success">
+                <center>
+                    <strong>No group & room overlaps detected.</strong>
+                </center>
             </div>
             {% endif %}
+
             {% if violation_table %}
-            <h2>Нарушения по GA_Input</h2>
-            {{ violation_table | safe }}
+            <div class="alert alert-danger">
+                <center>
+                    <h4 class="alert-heading">GA_Input Violations</h4>
+                </center>
+                <div class="table-responsive">
+                    <table class="table styled-table numbered-table">
+                        {{ violation_table | safe }}
+                    </table>
+                </div>
+            </div>
             {% else %}
-            <div class="fancy-success">
-                <span class="msg">Все требования GA_Input соблюдены.</span>
+            <div class="alert alert-success">
+                <strong>All GA_Input requirements are met.</strong>
             </div>
             {% endif %}
             {% endif %}
-        </div>
-    </div>
+        </section>
+    </main>
+
     <script src="{{ url_for('static', filename='js/check.js') }}"></script>
+
+    <footer class="aitu-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <img src="https://static.tildacdn.pro/tild3632-6531-4436-a133-333134313137/aitu-logo_.png"
+                    alt="AITU Logo" class="aitu-footer-logo" />
+                <span class="footer-title">Astana IT University</span>
+            </div>
+            <div class="footer-right">
+                <div class="footer-contacts">
+                    <a href="mailto:221015@astanait.edu.kz" title="Email Rakhim">Rakhim A.</a>
+                    <a href="mailto:221559@astanait.edu.kz" title="Email Aniyar">Aniyar B.</a>
+                    <a href="mailto:221309@astanait.edu.kz" title="Email Almas">Almas M.</a>
+                </div>
+                <div class="footer-year">© 2025 - Thesis project</div>
+            </div>
+        </div>
+    </footer>
 </body>
 
 </html>

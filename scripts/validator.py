@@ -12,7 +12,8 @@ def validate_schedule(chromosome):
     for gene in chromosome.genes:
         # Handle online lectures: only check group/time and slot
         if getattr(gene, "delivery_mode", "offline") == "online" and gene.type.lower() == "lecture":
-            if gene.time not in ["18:00", "19:00"]:
+            # Accept 18:00, 19:00, or 20:00 for online lectures
+            if gene.time not in ["18:00", "19:00", "20:00"]:
                 errors.append(f"{gene.group} online lecture at invalid time: {gene.time}")
         else:
             room_key = (gene.room, gene.day, gene.time)
@@ -24,6 +25,7 @@ def validate_schedule(chromosome):
             # Classic day/time checks
             year = int(gene.group.split("-")[1][:2])
             admission_year = 2000 + year
+            # NOTE: double-check if '+1' is required for your year logic
             study_year = 2024 - admission_year + 1
             allowed_days = GROUP_YEAR_DAYS.get(study_year, [])
             allowed_slots = FIRST_YEAR_TIMESLOTS if study_year == 1 else UPPER_YEAR_TIMESLOTS

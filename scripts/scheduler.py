@@ -1,5 +1,3 @@
-# scripts/scheduler.py
-
 import random
 from copy import deepcopy
 from collections import defaultdict
@@ -37,20 +35,42 @@ def try_assign_batch(groups, course, typ, days, slots, rooms, group_used, room_u
     # Only support offline practices/labs!
     # For online lecture: assign all to Online, allowed times only
     if delivery_mode == "online" and typ.lower() == "lecture":
-        online_slots = ["18:00", "19:00"]
+        online_slots = ["18:00", "19:00", "20:00", "21:00"]
         for g in groups:
-            day = random.choice(days)
-            time = random.choice(online_slots)
-            genes.append(Gene(
-                group=g,
-                course=course,
-                type=typ,
-                day=day,
-                time=time,
-                room="Online",
-                delivery_mode="online"
-            ))
+            assigned = False
+            for day in days:
+                for time in online_slots:
+                    if time not in group_used[g][day]:
+                        genes.append(Gene(
+                            group=g,
+                            course=course,
+                            type=typ,
+                            day=day,
+                            time=time,
+                            room="Online",
+                            delivery_mode="online"
+                        ))
+                        group_used[g][day].add(time)
+                        assigned = True
+                        break
+                if assigned:
+                    break
+            if not assigned:
+                # If all allowed slots are booked, still assign randomly (will be penalized for conflicts)
+                day = random.choice(days)
+                time = random.choice(online_slots)
+                genes.append(Gene(
+                    group=g,
+                    course=course,
+                    type=typ,
+                    day=day,
+                    time=time,
+                    room="Online",
+                    delivery_mode="online"
+                ))
+                group_used[g][day].add(time)
         return True
+
     # Else: offline as before
     random.shuffle(days)
     random.shuffle(slots)
@@ -78,30 +98,33 @@ def try_assign_batch(groups, course, typ, days, slots, rooms, group_used, room_u
                     for assigned_room in available_rooms[:needed_rooms]:
                         room_used[assigned_room][day][time][g] = (course, typ, group_ep, group_year)
                 return True
+
     # Fallback as before...
     if len(groups) == 1:
         g = groups[0]
-        for day in days:
-            for time in slots:
-                if time in group_used[g][day]:
-                    continue
-                available_rooms = [room for room in rooms if not room_used[room][day][time]]
-                if len(available_rooms) >= needed_rooms:
-                    room_string = ",".join(available_rooms[:needed_rooms])
-                    genes.append(Gene(
-                        group=g,
-                        course=course,
-                        type=typ,
-                        day=day,
-                        time=time,
-                        room=room_string,
-                        delivery_mode="offline"
-                    ))
-                    group_used[g][day].add(time)
-                    group_ep, group_year = get_group_ep_year(g)
-                    for assigned_room in available_rooms[:needed_rooms]:
-                        room_used[assigned_room][day][time][g] = (course, typ, group_ep, group_year)
-                    return True
+        # Try ALL day-time combinations, shuffled (KEY FIX)
+        day_time_pairs = [(d, t) for d in days for t in slots]
+        random.shuffle(day_time_pairs)
+        for day, time in day_time_pairs:
+            if time in group_used[g][day]:
+                continue
+            available_rooms = [room for room in rooms if not room_used[room][day][time]]
+            if len(available_rooms) >= needed_rooms:
+                room_string = ",".join(available_rooms[:needed_rooms])
+                genes.append(Gene(
+                    group=g,
+                    course=course,
+                    type=typ,
+                    day=day,
+                    time=time,
+                    room=room_string,
+                    delivery_mode="offline"
+                ))
+                group_used[g][day].add(time)
+                group_ep, group_year = get_group_ep_year(g)
+                for assigned_room in available_rooms[:needed_rooms]:
+                    room_used[assigned_room][day][time][g] = (course, typ, group_ep, group_year)
+                return True
         return False
     else:
         for sz in range(len(groups) - 1, 0, -1):
@@ -143,18 +166,38 @@ def generate_initial_population(raw_genes, rooms):
                 is_pe = "physical education" in course.lower() or course.strip().upper() == "PE"
                 if typ.lower() == "lecture" and delivery_mode == "online":
                     # Schedule online lectures only at allowed time slots
-                    online_slots = ["18:00", "19:00"]
-                    day = random.choice(days)
-                    time = random.choice(online_slots)
-                    genes.append(Gene(
-                        group=group,
-                        course=course,
-                        type=typ,
-                        day=day,
-                        time=time,
-                        room="Online",
-                        delivery_mode="online"
-                    ))
+                    online_slots = ["18:00", "19:00", "20:00", "21:00"]
+                    assigned = False
+                    for day in days:
+                        for time in online_slots:
+                            if time not in group_used[group][day]:
+                                genes.append(Gene(
+                                    group=group,
+                                    course=course,
+                                    type=typ,
+                                    day=day,
+                                    time=time,
+                                    room="Online",
+                                    delivery_mode="online"
+                                ))
+                                group_used[group][day].add(time)
+                                assigned = True
+                                break
+                        if assigned:
+                            break
+                    if not assigned:
+                        day = random.choice(days)
+                        time = random.choice(online_slots)
+                        genes.append(Gene(
+                            group=group,
+                            course=course,
+                            type=typ,
+                            day=day,
+                            time=time,
+                            room="Online",
+                            delivery_mode="online"
+                        ))
+                        group_used[group][day].add(time)
                     continue
                 if is_pe:
                     room = "Gym"
@@ -164,45 +207,48 @@ def generate_initial_population(raw_genes, rooms):
                     random.shuffle(candidate_rooms)
                 found = False
                 elective_room_count = get_elective_room_count(course)
-                for day in days:
-                    for time in slots:
-                        if time in group_used[group][day]:
-                            continue
-                        if is_pe:
+                # Try ALL day-time combinations, shuffled (KEY FIX)
+                day_time_pairs = [(d, t) for d in days for t in slots]
+                random.shuffle(day_time_pairs)
+                for day, time in day_time_pairs:
+                    if time in group_used[group][day]:
+                        continue
+                    if is_pe:
+                        genes.append(Gene(
+                            group=group,
+                            course=course,
+                            type=typ,
+                            day=day,
+                            time=time,
+                            room="Gym",
+                            delivery_mode="offline"
+                        ))
+                        group_used[group][day].add(time)
+                        room_used["Gym"][day][time][group] = (course, typ, "GYM", 0)
+                        found = True
+                        break
+                    else:
+                        available_rooms = [room for room in candidate_rooms if not room_used[room][day][time]]
+                        if len(available_rooms) >= elective_room_count:
+                            room_string = ",".join(available_rooms[:elective_room_count])
                             genes.append(Gene(
                                 group=group,
                                 course=course,
                                 type=typ,
                                 day=day,
                                 time=time,
-                                room="Gym",
+                                room=room_string,
                                 delivery_mode="offline"
                             ))
                             group_used[group][day].add(time)
-                            room_used["Gym"][day][time][group] = (course, typ, "GYM", 0)
+                            ep, study_year_val = get_group_ep_year(group)
+                            for assigned_room in available_rooms[:elective_room_count]:
+                                room_used[assigned_room][day][time][group] = (course, typ, ep, study_year_val)
                             found = True
                             break
-                        else:
-                            available_rooms = [room for room in candidate_rooms if not room_used[room][day][time]]
-                            if len(available_rooms) >= elective_room_count:
-                                room_string = ",".join(available_rooms[:elective_room_count])
-                                genes.append(Gene(
-                                    group=group,
-                                    course=course,
-                                    type=typ,
-                                    day=day,
-                                    time=time,
-                                    room=room_string,
-                                    delivery_mode="offline"
-                                ))
-                                group_used[group][day].add(time)
-                                ep, study_year_val = get_group_ep_year(group)
-                                for assigned_room in available_rooms[:elective_room_count]:
-                                    room_used[assigned_room][day][time][group] = (course, typ, ep, study_year_val)
-                                found = True
-                                break
-                    if found:
-                        break
+                if not found:
+                    # Could not assign—could add to an "unassigned" list or log
+                    pass
         chromosome = Chromosome(genes)
         chromosome.calculate_fitness()
         population.append(chromosome)
@@ -228,7 +274,7 @@ def evolve_population(population, rooms):
         if getattr(gene, "delivery_mode", "offline") == "online" and gene.type.lower() == "lecture":
             attr = random.choice(["time", "day"])
             if attr == "time":
-                gene.time = random.choice(["18:00", "19:00"])
+                gene.time = random.choice(["18:00", "19:00", "20:00", "21:00"])
             elif attr == "day":
                 days, _ = get_valid_slots_for_group(gene.group)
                 gene.day = random.choice(days)
@@ -243,22 +289,29 @@ def evolve_population(population, rooms):
 
 def run_scheduler(raw_genes, rooms, verbose=True):
     population = generate_initial_population(raw_genes, rooms)
+
     best_fitness = float("inf")
     stagnant = 0
-    best_fitness_progress = []  
+    best_fitness_progress = []  # Track best fitness at each generation
+
     for generation in range(GENERATIONS):
         population, best = evolve_population(population, rooms)
+
         if best.fitness < best_fitness:
             best_fitness = best.fitness
             best_schedule = best
             stagnant = 0
         else:
             stagnant += 1
-        best_fitness_progress.append(best_fitness)  
+
+        best_fitness_progress.append(best_fitness)
         if verbose:
             print(f"Generation {generation + 1} | Best Fitness: {best_fitness}")
+
         if stagnant >= EARLY_STOP_GENERATIONS:
             if verbose:
                 print("Stopping early due to no improvement.")
             break
-    return best_schedule, best_fitness_progress 
+        print("Best fitness progress:", best_fitness_progress)
+
+    return best_schedule, best_fitness_progress

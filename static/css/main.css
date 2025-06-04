@@ -416,6 +416,35 @@ html {
     transform: translateY(-2px) scale(1.04);
 }
 
+/* Download buttons - custom color if needed */
+.btn-success {
+    background: linear-gradient(90deg, #19be94 60%, #117964 100%);
+    color: #fff !important;
+    font-weight: 700;
+    border-radius: 9px;
+    border: none;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background: linear-gradient(90deg, #117964 20%, #19be94 100%);
+    color: #fff !important;
+}
+
+.btn-info {
+    background: linear-gradient(92deg, #0b96ff 60%, #197be9 100%);
+    color: #fff !important;
+    font-weight: 700;
+    border-radius: 9px;
+    border: none;
+}
+
+.btn-info:hover,
+.btn-info:focus {
+    background: linear-gradient(92deg, #197be9 40%, #0b96ff 100%);
+    color: #fff !important;
+}
+
 /* FILE UPLOAD */
 .file-drop-area {
     position: relative;

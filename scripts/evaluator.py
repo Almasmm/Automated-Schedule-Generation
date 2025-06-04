@@ -1,5 +1,3 @@
-# scripts/evaluator.py
-
 from collections import defaultdict
 from scripts.config import GROUP_YEAR_DAYS, FIRST_YEAR_TIMESLOTS, UPPER_YEAR_TIMESLOTS
 
@@ -19,16 +17,16 @@ def evaluate_fitness(genes):
         group_schedule[key_group].append(g)
         group_day_slots[g.group][g.day].append(g.time)
 
-        # Determine year and allowed days/slots
+        # --- Time range and slot validation ---
         year = int(g.group.split("-")[1][:2])
         admission_year = 2000 + year
         study_year = 2024 - admission_year
         allowed_days = GROUP_YEAR_DAYS.get(study_year, [])
         allowed_slots = FIRST_YEAR_TIMESLOTS if study_year == 1 else UPPER_YEAR_TIMESLOTS
 
-        # Online lectures: only 18:00 or 19:00 are valid times
+        # Online lecture can only be at 18:00, 19:00, or 20:00
         if getattr(g, "delivery_mode", "offline") == "online" and g.type.lower() == "lecture":
-            if g.time not in ["18:00", "19:00"]:
+            if g.time not in ["18:00", "19:00", "20:00"]:
                 hard_penalty += 1000
         else:
             if g.day not in allowed_days:
@@ -36,20 +34,23 @@ def evaluate_fitness(genes):
             if g.time not in allowed_slots:
                 hard_penalty += 100
 
-        # Only add offline classes to room schedule for room conflict checks
+        # Only add offline to room_schedule (room conflicts)
         if getattr(g, "delivery_mode", "offline") != "online":
             room_schedule[key_room].append(g)
 
-    # HARD CONSTRAINTS: Room conflicts (offline only, with special handling for PE/Gym and joint lectures)
+    # --- ROOM CONFLICTS: ignore online, check offline as before ---
     for key, val in room_schedule.items():
         room, day, time = key
 
-        # Skip PE in gym conflicts
-        if all(("physical education" in g.course.lower() or g.course.strip().upper() == "PE") and g.room.strip().lower() == "gym" for g in val):
+        # Gym (PE) is exempt from conflicts
+        if all(
+            ("physical education" in g.course.lower() or g.course.strip().upper() == "PE")
+            and g.room.strip().lower() == "gym"
+            for g in val
+        ):
             continue
 
         all_lectures = all(g.type.lower() == "lecture" for g in val)
-
         joint_keys = set()
         for g in val:
             ep = g.group.split("-")[0].upper()
@@ -58,7 +59,7 @@ def evaluate_fitness(genes):
             study_year = 2024 - admission_year
             joint_keys.add((g.course, g.type, ep, study_year))
 
-        # Allow joint lectures for same course if <= 5
+        # Allow joint lectures (<=5 groups for same course/EP/year/type)
         if all_lectures and len(joint_keys) == 1:
             if len(val) > 5:
                 hard_penalty += 1000 * (len(val) - 5)
@@ -66,14 +67,26 @@ def evaluate_fitness(genes):
             if len(val) > 1:
                 hard_penalty += 1000 * (len(val) - 1)
 
-    # HARD: Group conflicts (online and offline)
-    for val in group_schedule.values():
+    # --- GROUP CONFLICTS: online & offline ---
+    # Prevent any group from having more than one session at same day+time
+    for key, val in group_schedule.items():
         if len(val) > 1:
             hard_penalty += 1000 * (len(val) - 1)
 
-    # SOFT: Practice before lecture (by course)
+    # Prevent any group from having more than one session at 18:00, 19:00, or 20:00 on the same day
+    # (even if both are online lectures)
+    group_day_lateslot = defaultdict(lambda: defaultdict(list))  # group -> day -> list of sessions
+    for g in genes:
+        if g.time in ["18:00", "19:00", "20:00"]:
+            group_day_lateslot[g.group][g.day].append(g)
+    for group, days in group_day_lateslot.items():
+        for day, sessions in days.items():
+            if len(sessions) > 1:
+                # Only one allowed per group per day in 18:00/19:00/20:00, penalize all extras
+                hard_penalty += 1000 * (len(sessions) - 1)
+
+    # --- PRACTICE BEFORE LECTURE (by course) ---
     seen_lectures = set()
-    seen_practices = set()
     for g in genes:
         tag = (g.group, g.course)
         if g.type.lower() == "lecture":
@@ -81,14 +94,18 @@ def evaluate_fitness(genes):
         elif g.type.lower() == "practice" and tag not in seen_lectures:
             soft_penalty += 10
 
-    # SOFT: Gaps in group schedule per day
+    # --- SOFT: Gaps in group schedule per day (offline sessions only) ---
     for group, days in group_day_slots.items():
         for day, times in days.items():
-            times_sorted = sorted(times)
+            offline_times = [
+                g.time for g in genes
+                if g.group == group and g.day == day and getattr(g, "delivery_mode", "offline") != "online"
+            ]
+            offline_times_sorted = sorted(offline_times)
             gaps = 0
-            for i in range(1, len(times_sorted)):
-                prev = int(times_sorted[i - 1][:2])
-                curr = int(times_sorted[i][:2])
+            for i in range(1, len(offline_times_sorted)):
+                prev = int(offline_times_sorted[i - 1][:2])
+                curr = int(offline_times_sorted[i][:2])
                 if curr - prev > 1:
                     gaps += curr - prev - 1
             soft_penalty += gaps * 100

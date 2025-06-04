@@ -1,27 +1,35 @@
 # scripts/config.py
-
 # GA Hyperparameters
-POPULATION_SIZE = 200     
-GENERATIONS = 150         
-MUTATION_RATE = 0.12      
-CROSSOVER_RATE = 0.88    
-EARLY_STOP_GENERATIONS = 25
+import datetime
+import os
 
-# Trimester-based paths
-INPUT_FILE = "inputs/GA_input.xlsx"
-OUTPUT_JSON = "outputs/timetable_T{trimester}/2024.json"
-OUTPUT_EXCEL = "outputs/timetable_T{trimester}/2024.xlsx"
+POPULATION_SIZE = 100     
+GENERATIONS = 100         
+MUTATION_RATE = 0.15      
+CROSSOVER_RATE = 0.85    
+EARLY_STOP_GENERATIONS = 10
 
-# Weekly time slots
+INPUT_FILE = "inputs/Input_File_Template.xlsx"
+def get_output_paths(trimester: int):
+    now = datetime.datetime.now()
+    year = now.year
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+
+    folder = f"outputs/timetable_T{trimester}_{year}_{timestamp}"
+    os.makedirs(folder, exist_ok=True)
+
+    json_path = os.path.join(folder, "schedule.json")
+    excel_path = os.path.join(folder, "schedule.xlsx")
+    return json_path, excel_path
+
 FIRST_YEAR_TIMESLOTS = [
-    f"{hour:02d}:00" for hour in range(8, 14)  # 08:00 - 13:00
+    f"{hour:02d}:00" for hour in range(8, 14)  
 ]
 
 UPPER_YEAR_TIMESLOTS = [
-    f"{hour:02d}:00" for hour in range(8, 20)  # 08:00 - 19:00
+    f"{hour:02d}:00" for hour in range(8, 20)  
 ]
 
-# Days by group year
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 GROUP_YEAR_DAYS = {
@@ -34,18 +42,10 @@ GROUP_YEAR_DAYS = {
 CURRENT_YEAR = 2024
 
 # Rooms to exclude (labs)
-EXCLUDED_ROOMS = [
-    "C1.2.124", "C1.1.260", "C1.3.122", "C1.3.124",
-    "C1.3.327", "C1.3.324"
-]
+EXCLUDED_ROOMS = []
 
 # Session types
 SESSION_TYPES = ["Lecture", "Practice", "Lab"]
 
 # Course keywords to exclude
-EXCLUDED_COURSES = [
-    "Industrial Practice",
-    "Diploma Work",
-    "Educational Practice",
-    "Undergraduate Practice"
-]
+EXCLUDED_COURSES = []
