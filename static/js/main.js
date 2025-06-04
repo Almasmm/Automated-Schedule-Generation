@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById("datasetUpload");
     const fileNameDisplay = document.getElementById("fileNameDisplay");
     if (dropArea && fileInput) {
-        dropArea.addEventListener('click', () => fileInput.click());
-        dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
+        dropArea.addEventListener('click', (e) => {
+        }); dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
         dropArea.addEventListener('dragleave', e => { dropArea.classList.remove('dragover'); });
         dropArea.addEventListener('drop', e => {
             e.preventDefault();

@@ -51,7 +51,6 @@ def preprocess_data():
     # Filter out excluded courses
     def is_valid_course(course):
         return not any(x in str(course) for x in EXCLUDED_COURSES)
-
     courses_df = courses_df[courses_df["course_name"].apply(is_valid_course)]
 
     # Add year info to groups
@@ -64,60 +63,111 @@ def preprocess_data():
         "instructors": instructors_df
     }
 
+
 def extract_raw_genes(groups_df, courses_df, trimester):
     """
-    Extracts initial raw genes (events) for the GA, grouped by group and trimester logic.
+    Advanced gene extraction: joint lectures, delivery_mode, batching
     """
     raw_genes = []
 
     group_name_col = [c for c in groups_df.columns if "group" in c.lower()][0]
     course_name_col = "course_name"
     trimester_col = [c for c in courses_df.columns if "trimester" in c.lower()][0]
+    delivery_col = next((c for c in courses_df.columns if "delivery_mode" in c.lower()), None)
 
-    def get_ep_from_group(group_name):
-        return str(group_name).split('-')[0]
+    def get_ep(group: str) -> str:
+        return str(group).split("-")[0]
 
-    def get_admission_year(group_name):
-        return int(group_name.split("-")[1][:2]) + 2000
+    def admission_year(group: str) -> int:
+        return int(group.split("-")[1][:2]) + 2000
 
-    for _, group_row in groups_df.iterrows():
-        group_name = group_row[group_name_col]
-        ep = get_ep_from_group(group_name).upper().strip()
-        admission_year = get_admission_year(group_name)
-        study_year = CURRENT_YEAR - admission_year  # <-- important logic fix
+    # Group groups by programme and study year
+    groups_by_ep_year = {}
+    for _, g_row in groups_df.iterrows():
+        gname = g_row[group_name_col]
+        ep = get_ep(gname).upper().strip()
+        study_year = CURRENT_YEAR - admission_year(gname) + 1
+        groups_by_ep_year.setdefault((ep, study_year), []).append(gname)
 
-        curriculum_trimester = (study_year) * 3 + trimester - 3
-        # (study_year = 1) => 1st year: trimester 1,2,3
-        # (study_year = 2) => 2nd year: trimester 4,5,6
-        # (study_year = 3) => 3rd year: trimester 7,8,9
+    weeks_per_trimester = 10
 
+    # Aggregate joint lecture info
+    joint_lecture_slots = {}
+    joint_lecture_groups = {}
+
+    for (ep, study_year), g_list in groups_by_ep_year.items():
+        curriculum_trimester = (study_year - 1) * 3 + trimester
         ep_courses = courses_df[
             (courses_df["EP"] == ep) &
             (courses_df[trimester_col] == curriculum_trimester)
         ]
-
-        print(f"Group: {group_name} | EP: {ep} | Study year: {study_year+1} | Curriculum trimester: {curriculum_trimester} | Courses: {len(ep_courses)}")
+        # Print for debug:
+        # print(f"EP: {ep} | Year: {study_year} | Trim: {curriculum_trimester} | Groups: {g_list} | Courses: {len(ep_courses)}")
 
         type_to_column = {
             "Lecture": "lecture_slots",
             "Practice": "practice_slots",
             "Lab": "lab_slots"
         }
-        weeks_per_trimester = 10
 
-        for _, course_row in ep_courses.iterrows():
-            course = course_row[course_name_col]
-            for typ in ["Lecture", "Practice", "Lab"]:
-                slots_col = type_to_column[typ]
-                total_slots = int(course_row[slots_col]) if slots_col in course_row and pd.notnull(course_row[slots_col]) else 0
-                if total_slots == 0:
-                    continue
-                slots_per_week = total_slots // weeks_per_trimester
-                for _ in range(slots_per_week):
-                    raw_genes.append({
-                        "group": group_name,
-                        "course": course,
-                        "type": typ
-                    })
+        for _, c_row in ep_courses.iterrows():
+            course = c_row[course_name_col]
+            delivery = str(c_row.get(delivery_col)).strip().lower() if delivery_col and pd.notnull(c_row.get(delivery_col)) else "offline"
+            lec_val = c_row.get("lecture_slots", 0)
+            prac_val = c_row.get("practice_slots", 0)
+            lab_val = c_row.get("lab_slots", 0)
+            lec_total = int(lec_val) if pd.notnull(lec_val) else 0
+            prac_total = int(prac_val) if pd.notnull(prac_val) else 0
+            lab_total = int(lab_val) if pd.notnull(lab_val) else 0
+
+            lec_pw = lec_total // weeks_per_trimester
+            prac_pw = prac_total // weeks_per_trimester
+            lab_pw = lab_total // weeks_per_trimester
+
+            # Collect joint lectures
+            if lec_pw > 0:
+                joint_lecture_slots[(ep, study_year, course)] = lec_pw
+                joint_lecture_groups[(ep, study_year, course)] = g_list
+
+            if prac_pw > 0:
+                for g in g_list:
+                    for _ in range(prac_pw):
+                        raw_genes.append({
+                            "group": g,
+                            "course": course,
+                            "type": "Practice",
+                            "delivery_mode": "offline",
+                        })
+
+            if lab_pw > 0:
+                for g in g_list:
+                    for _ in range(lab_pw):
+                        raw_genes.append({
+                            "group": g,
+                            "course": course,
+                            "type": "Lab",
+                            "delivery_mode": "offline",
+                        })
+
+    # After all, build lecture genes as joint (batch by 5 if offline, all if online)
+    for (ep, study_year, course), slots in joint_lecture_slots.items():
+        row = courses_df[
+            (courses_df["EP"] == ep)
+            & (courses_df[trimester_col] == (study_year - 1) * 3 + trimester)
+            & (courses_df[course_name_col] == course)
+        ].iloc[0]
+        delivery = str(row.get(delivery_col)).strip().lower() if delivery_col and pd.notnull(row.get(delivery_col)) else "offline"
+
+        groups = joint_lecture_groups[(ep, study_year, course)]
+        batches = [groups] if delivery == "online" else [groups[i:i+5] for i in range(0, len(groups), 5)]
+
+        for _ in range(slots):
+            for batch in batches:
+                raw_genes.append({
+                    "joint_groups": batch,
+                    "course": course,
+                    "type": "Lecture",
+                    "delivery_mode": delivery,
+                })
 
     return raw_genes

@@ -68,3 +68,14 @@ The bachelor’s thesis and system include:
    ```bash
    git clone https://github.com/yourusername/Automated-Schedule-Generation.git
    cd Automated-Schedule-Generation
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the development server:**
+   ```bash
+   python server.py
+   ```

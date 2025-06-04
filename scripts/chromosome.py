@@ -20,11 +20,10 @@ class Chromosome:
     def mutate(self, timeslots, days, rooms):
         gene = random.choice(self.genes)
         if "physical education" in gene.course.lower() or gene.course.strip().upper() == "PE":
-            attr = random.choice(["time", "day"])  # can't change room
+            # PE sessions keep the room fixed so only time or day may change
+            attr = random.choice(["time", "day"])
         else:
             attr = random.choice(["time", "day", "room"])
-        # Choose which attribute to mutate
-        attr = random.choice(["time", "day", "room"])
         if attr == "time":
             gene.time = random.choice(timeslots)
         elif attr == "day":

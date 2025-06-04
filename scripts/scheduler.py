@@ -4,9 +4,15 @@ from collections import defaultdict
 from scripts.chromosome import Chromosome
 from scripts.gene import Gene
 from scripts.config import (
-    POPULATION_SIZE, GENERATIONS, CROSSOVER_RATE, MUTATION_RATE,
-    EARLY_STOP_GENERATIONS, FIRST_YEAR_TIMESLOTS,
-    UPPER_YEAR_TIMESLOTS, GROUP_YEAR_DAYS
+    POPULATION_SIZE,
+    GENERATIONS,
+    CROSSOVER_RATE,
+    MUTATION_RATE,
+    EARLY_STOP_GENERATIONS,
+    FIRST_YEAR_TIMESLOTS,
+    UPPER_YEAR_TIMESLOTS,
+    GROUP_YEAR_DAYS,
+    ONLINE_LECTURE_TIMES,
 )
 import itertools
 
@@ -35,7 +41,7 @@ def try_assign_batch(groups, course, typ, days, slots, rooms, group_used, room_u
     # Only support offline practices/labs!
     # For online lecture: assign all to Online, allowed times only
     if delivery_mode == "online" and typ.lower() == "lecture":
-        online_slots = ["18:00", "19:00", "20:00", "21:00"]
+        online_slots = ONLINE_LECTURE_TIMES
         for g in groups:
             assigned = False
             for day in days:
@@ -166,7 +172,7 @@ def generate_initial_population(raw_genes, rooms):
                 is_pe = "physical education" in course.lower() or course.strip().upper() == "PE"
                 if typ.lower() == "lecture" and delivery_mode == "online":
                     # Schedule online lectures only at allowed time slots
-                    online_slots = ["18:00", "19:00", "20:00", "21:00"]
+                    online_slots = ONLINE_LECTURE_TIMES
                     assigned = False
                     for day in days:
                         for time in online_slots:
@@ -274,7 +280,7 @@ def evolve_population(population, rooms):
         if getattr(gene, "delivery_mode", "offline") == "online" and gene.type.lower() == "lecture":
             attr = random.choice(["time", "day"])
             if attr == "time":
-                gene.time = random.choice(["18:00", "19:00", "20:00", "21:00"])
+                gene.time = random.choice(ONLINE_LECTURE_TIMES)
             elif attr == "day":
                 days, _ = get_valid_slots_for_group(gene.group)
                 gene.day = random.choice(days)

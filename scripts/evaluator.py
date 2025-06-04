@@ -1,5 +1,10 @@
 from collections import defaultdict
-from scripts.config import GROUP_YEAR_DAYS, FIRST_YEAR_TIMESLOTS, UPPER_YEAR_TIMESLOTS
+from scripts.config import (
+    GROUP_YEAR_DAYS,
+    FIRST_YEAR_TIMESLOTS,
+    UPPER_YEAR_TIMESLOTS,
+    ONLINE_LECTURE_TIMES,
+)
 
 def evaluate_fitness(genes):
     hard_penalty = 0
@@ -24,9 +29,9 @@ def evaluate_fitness(genes):
         allowed_days = GROUP_YEAR_DAYS.get(study_year, [])
         allowed_slots = FIRST_YEAR_TIMESLOTS if study_year == 1 else UPPER_YEAR_TIMESLOTS
 
-        # Online lecture can only be at 18:00, 19:00, or 20:00
+        # Online lecture can only be at predefined evening times
         if getattr(g, "delivery_mode", "offline") == "online" and g.type.lower() == "lecture":
-            if g.time not in ["18:00", "19:00", "20:00"]:
+            if g.time not in ONLINE_LECTURE_TIMES:
                 hard_penalty += 1000
         else:
             if g.day not in allowed_days:
@@ -73,16 +78,16 @@ def evaluate_fitness(genes):
         if len(val) > 1:
             hard_penalty += 1000 * (len(val) - 1)
 
-    # Prevent any group from having more than one session at 18:00, 19:00, or 20:00 on the same day
+    # Prevent any group from having more than one session during the allowed online lecture times on the same day
     # (even if both are online lectures)
     group_day_lateslot = defaultdict(lambda: defaultdict(list))  # group -> day -> list of sessions
     for g in genes:
-        if g.time in ["18:00", "19:00", "20:00"]:
+        if g.time in ONLINE_LECTURE_TIMES:
             group_day_lateslot[g.group][g.day].append(g)
     for group, days in group_day_lateslot.items():
         for day, sessions in days.items():
             if len(sessions) > 1:
-                # Only one allowed per group per day in 18:00/19:00/20:00, penalize all extras
+                # Only one allowed per group per day in these evening slots, penalize all extras
                 hard_penalty += 1000 * (len(sessions) - 1)
 
     # --- PRACTICE BEFORE LECTURE (by course) ---

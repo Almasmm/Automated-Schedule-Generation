@@ -1,7 +1,12 @@
 # scripts/validator.py
 
 from collections import defaultdict
-from scripts.config import FIRST_YEAR_TIMESLOTS, UPPER_YEAR_TIMESLOTS, GROUP_YEAR_DAYS
+from scripts.config import (
+    FIRST_YEAR_TIMESLOTS,
+    UPPER_YEAR_TIMESLOTS,
+    GROUP_YEAR_DAYS,
+    ONLINE_LECTURE_TIMES,
+)
 
 def validate_schedule(chromosome):
     errors = []
@@ -12,8 +17,8 @@ def validate_schedule(chromosome):
     for gene in chromosome.genes:
         # Handle online lectures: only check group/time and slot
         if getattr(gene, "delivery_mode", "offline") == "online" and gene.type.lower() == "lecture":
-            # Accept 18:00, 19:00, or 20:00 for online lectures
-            if gene.time not in ["18:00", "19:00", "20:00"]:
+            # Accept only the predefined evening times
+            if gene.time not in ONLINE_LECTURE_TIMES:
                 errors.append(f"{gene.group} online lecture at invalid time: {gene.time}")
         else:
             room_key = (gene.room, gene.day, gene.time)

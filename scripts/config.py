@@ -27,8 +27,11 @@ FIRST_YEAR_TIMESLOTS = [
 ]
 
 UPPER_YEAR_TIMESLOTS = [
-    f"{hour:02d}:00" for hour in range(8, 20)  
+    f"{hour:02d}:00" for hour in range(8, 20)
 ]
+
+# Lecture times
+ONLINE_LECTURE_TIMES = ["18:00", "19:00", "20:00", "21:00"]
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
