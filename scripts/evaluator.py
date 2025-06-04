@@ -7,6 +7,12 @@ from scripts.config import (
 )
 
 def evaluate_fitness(genes):
+    """Return the combined fitness score for a chromosome."""
+    hard_penalty, soft_penalty = compute_penalties(genes)
+    return hard_penalty + soft_penalty
+
+def compute_penalties(genes):
+    """Calculate hard and soft penalties for a list of genes."""
     hard_penalty = 0
     soft_penalty = 0
 
@@ -115,4 +121,4 @@ def evaluate_fitness(genes):
                     gaps += curr - prev - 1
             soft_penalty += gaps * 100
 
-    return hard_penalty + soft_penalty
+    return hard_penalty, soft_penalty

@@ -17,6 +17,9 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 INPUTS_FOLDER = os.path.join(PROJECT_ROOT, 'inputs')
 OUTPUTS_FOLDER = os.path.join(PROJECT_ROOT, 'outputs')
 
+# Cache of the most recently generated output paths per trimester
+LAST_OUTPUTS = {}
+
 @bp.route("/check", methods=["GET", "POST"])
 def check_schedule():
     """
@@ -53,7 +56,7 @@ def index():
 def generate_schedule_route():
     """
     Handles schedule generation and returns metrics JSON.
-    Saves files with dynamic names (year, timestamp, etc).
+    Generated files are saved to the static output paths defined in ``config.get_output_paths``.
     """
     if 'file' not in request.files or 'trimester' not in request.form:
         return jsonify({'error': 'File or trimester not provided'}), 400
@@ -69,15 +72,18 @@ def generate_schedule_route():
         # First call gets best_schedule & fitness_progress
         best_schedule, fitness_progress = generate_schedule(input_path, int(trimester))
         elapsed = round(time.time() - start, 2)
-        excel_out, json_out = get_output_paths(trimester)
+        json_out, excel_out = get_output_paths(trimester)
         save_schedule(best_schedule, excel_out, json_out)
-        fitness_score = best_schedule.fitness
-        conflicts = int(fitness_score // 1000)
+
+        # Remember the latest outputs for this trimester
+        LAST_OUTPUTS[trimester] = (excel_out, json_out)
+        
+        from scripts.evaluator import compute_penalties
+        hard, soft = compute_penalties(best_schedule.genes)
         metrics = {
-            "fitnessScore": round(10000 / (1 + fitness_score), 2),
-            "conflicts": conflicts,
-            "hard": "-",    
-            "soft": "-",    
+            "fitnessScore": best_schedule.fitness,
+            "hard": int(hard),
+            "soft": int(soft),   
             "time": elapsed,
             "fitness_progress": fitness_progress
         }
@@ -91,16 +97,17 @@ def download_excel():
     Downloads most recent Excel file for given trimester.
     """
     trimester = request.args.get('trimester', '1')
-    # Use dynamic output (most recent) if possible
-    # Otherwise fallback to old path
-    _, excel_path = get_output_paths(trimester)
-    if not os.path.exists(excel_path):
-        # fallback to old style, for backward compat
-        fallback = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.xlsx')
-        if not os.path.exists(fallback):
-            return "Excel file not found", 404
-        return send_file(fallback, as_attachment=True, download_name=f'timetable_T{trimester}.xlsx')
-    return send_file(excel_path, as_attachment=True, download_name=os.path.basename(excel_path))
+    cached = LAST_OUTPUTS.get(trimester)
+    if cached:
+        excel_path, _ = cached
+        if os.path.exists(excel_path):
+            return send_file(excel_path, as_attachment=True, download_name=os.path.basename(excel_path))
+
+    # fallback to old style, for backward compat
+    fallback = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.xlsx')
+    if not os.path.exists(fallback):
+        return "Excel file not found", 404
+    return send_file(fallback, as_attachment=True, download_name=f'timetable_T{trimester}.xlsx')
 
 
 @bp.route('/download_json')
@@ -109,11 +116,14 @@ def download_json():
     Downloads most recent JSON file for given trimester.
     """
     trimester = request.args.get('trimester', '1')
-    json_path, _ = get_output_paths(trimester)
-    if not os.path.exists(json_path):
-        fallback = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.json')
-        if not os.path.exists(fallback):
-            return "JSON file not found", 404
-        return send_file(fallback, as_attachment=True, download_name=f'timetable_T{trimester}.json')
-    return send_file(json_path, as_attachment=True, download_name=os.path.basename(json_path))
+    cached = LAST_OUTPUTS.get(trimester)
+    if cached:
+        _, json_path = cached
+        if os.path.exists(json_path):
+            return send_file(json_path, as_attachment=True, download_name=os.path.basename(json_path))
+
+    fallback = os.path.join(OUTPUTS_FOLDER, f'timetable_T{trimester}.json')
+    if not os.path.exists(fallback):
+        return "JSON file not found", 404
+    return send_file(fallback, as_attachment=True, download_name=f'timetable_T{trimester}.json')
 

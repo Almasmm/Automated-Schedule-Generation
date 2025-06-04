@@ -3,23 +3,20 @@
 import datetime
 import os
 
-POPULATION_SIZE = 100     
-GENERATIONS = 100         
+POPULATION_SIZE = 35     
+GENERATIONS = 50         
 MUTATION_RATE = 0.15      
-CROSSOVER_RATE = 0.85    
-EARLY_STOP_GENERATIONS = 10
+CROSSOVER_RATE = 0.9    
+EARLY_STOP_GENERATIONS = 3
 
 INPUT_FILE = "inputs/Input_File_Template.xlsx"
 def get_output_paths(trimester: int):
-    now = datetime.datetime.now()
-    year = now.year
-    timestamp = now.strftime("%Y%m%d_%H%M%S")
-
-    folder = f"outputs/timetable_T{trimester}_{year}_{timestamp}"
+    """Return JSON and Excel output paths for a given trimester."""
+    folder = "outputs"
     os.makedirs(folder, exist_ok=True)
 
-    json_path = os.path.join(folder, "schedule.json")
-    excel_path = os.path.join(folder, "schedule.xlsx")
+    json_path = os.path.join(folder, f"timetable_T{trimester}.json")
+    excel_path = os.path.join(folder, f"timetable_T{trimester}.xlsx")
     return json_path, excel_path
 
 FIRST_YEAR_TIMESLOTS = [
